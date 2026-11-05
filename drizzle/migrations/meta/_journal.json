@@ -43,6 +43,13 @@
       "when": 1793858055866,
       "tag": "0005_finance_credit_contracts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793908936336,
+      "tag": "0006_crm_and_evaluations",
+      "breakpoints": true
     }
   ]
 }

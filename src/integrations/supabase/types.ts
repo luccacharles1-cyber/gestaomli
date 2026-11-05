@@ -443,6 +443,67 @@ export type Database = {
           },
         ]
       }
+      crm_tasks: {
+        Row: {
+          assigned_to: string
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          done_at: string | null
+          due_at: string
+          id: string
+          opportunity_id: string | null
+          store_id: string
+          title: string
+        }
+        Insert: {
+          assigned_to?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          done_at?: string | null
+          due_at: string
+          id?: string
+          opportunity_id?: string | null
+          store_id: string
+          title: string
+        }
+        Update: {
+          assigned_to?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          done_at?: string | null
+          due_at?: string
+          id?: string
+          opportunity_id?: string | null
+          store_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_costs: {
         Row: {
           device_id: string
@@ -702,6 +763,171 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "devices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_adjustments: {
+        Row: {
+          active: boolean
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          store_id: string
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          label: string
+          store_id: string
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_adjustments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_prices: {
+        Row: {
+          id: string
+          model: string
+          reference_value: number
+          storage: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          model: string
+          reference_value: number
+          storage?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          model?: string
+          reference_value?: number
+          storage?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_prices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          adjustments: Json
+          approved_at: string | null
+          approved_by: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          model: string
+          needs_approval: boolean
+          notes: string | null
+          offered_value: number
+          opportunity_id: string | null
+          reference_value: number | null
+          sale_id: string | null
+          status: string
+          storage: string
+          store_id: string
+          suggested_value: number | null
+        }
+        Insert: {
+          adjustments?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          model: string
+          needs_approval: boolean
+          notes?: string | null
+          offered_value: number
+          opportunity_id?: string | null
+          reference_value?: number | null
+          sale_id?: string | null
+          status: string
+          storage?: string
+          store_id: string
+          suggested_value?: number | null
+        }
+        Update: {
+          adjustments?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          model?: string
+          needs_approval?: boolean
+          notes?: string | null
+          offered_value?: number
+          opportunity_id?: string | null
+          reference_value?: number | null
+          sale_id?: string | null
+          status?: string
+          storage?: string
+          store_id?: string
+          suggested_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -969,6 +1195,73 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      opportunities: {
+        Row: {
+          budget: number | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          desired_model: string | null
+          id: string
+          notes: string | null
+          owner_id: string
+          sale_id: string | null
+          stage: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          desired_model?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          sale_id?: string | null
+          stage?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          desired_model?: string | null
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          sale_id?: string | null
+          stage?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_grants: {
         Row: {
@@ -1573,6 +1866,20 @@ export type Database = {
         }
         Returns: string
       }
+      complete_sale_evaluated: {
+        Args: {
+          _client_id: string
+          _client_token: string
+          _discount: number
+          _evaluation_id: string
+          _items: Json
+          _notes: string
+          _payments: Json
+          _store_id: string
+          _trade_in: Json
+        }
+        Returns: string
+      }
       create_credit_contract: {
         Args: {
           _client_token: string
@@ -1583,7 +1890,24 @@ export type Database = {
         }
         Returns: string
       }
+      create_evaluation: {
+        Args: {
+          _adjustment_ids: string[]
+          _client_id: string
+          _model: string
+          _notes: string
+          _offered: number
+          _opportunity_id: string
+          _storage: string
+          _store_id: string
+        }
+        Returns: string
+      }
       create_store: { Args: { _name: string }; Returns: string }
+      decide_evaluation: {
+        Args: { _approve: boolean; _id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
