@@ -56,7 +56,7 @@ function Vendas() {
       <PageHeader
         title="Vendas"
         subtitle="Vendas concluídas, trocas e recebimentos."
-        actions={perms.registerSales && <Button asChild><Link to="/app/vendas/nova" search={{}}><Plus className="mr-1 h-4 w-4" />Nova venda</Link></Button>}
+        actions={perms.registerSales && <Button asChild><Link to="/app/vendas/nova" search={{ device: undefined }}><Plus className="mr-1 h-4 w-4" />Nova venda</Link></Button>}
       />
       <div className="mb-4 grid gap-2 md:grid-cols-[1fr_auto]">
         <div className="relative">
@@ -81,7 +81,7 @@ function Vendas() {
         <div className="rounded-xl border border-dashed bg-card p-12 text-center">
           <ShoppingCart className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-3 font-semibold">{data?.length ? "Nenhuma venda com esses filtros" : "Nenhuma venda registrada"}</p>
-          {!data?.length && perms.registerSales && <Button asChild className="mt-4"><Link to="/app/vendas/nova" search={{}}>Registrar a primeira venda</Link></Button>}
+          {!data?.length && perms.registerSales && <Button asChild className="mt-4"><Link to="/app/vendas/nova" search={{ device: undefined }}>Registrar a primeira venda</Link></Button>}
         </div>
       ) : (
         <div className="space-y-2">
