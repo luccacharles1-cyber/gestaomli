@@ -14,10 +14,14 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app/admin'
 import { Route as AuthenticatedAppAvaliacaoRouteImport } from './routes/_authenticated/app/avaliacao'
 import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenticated/app/clientes'
+import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
 import { Route as AuthenticatedAppDocumentosRouteImport } from './routes/_authenticated/app/documentos'
 import { Route as AuthenticatedAppFinanceiroRouteImport } from './routes/_authenticated/app/financeiro'
+import { Route as AuthenticatedAppFornecedoresRouteImport } from './routes/_authenticated/app/fornecedores'
 import { Route as AuthenticatedAppRelatoriosRouteImport } from './routes/_authenticated/app/relatorios'
 import { Route as AuthenticatedAppVendasRouteImport } from './routes/_authenticated/app/vendas'
 import { Route as AuthenticatedAppEstoqueIndexRouteImport } from './routes/_authenticated/app/estoque/index'
@@ -48,6 +52,16 @@ const AuthenticatedAppRouteRoute = AuthenticatedAppRouteRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
+const AuthenticatedAppAdminRoute = AuthenticatedAppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
 const AuthenticatedAppAvaliacaoRoute =
   AuthenticatedAppAvaliacaoRouteImport.update({
     id: '/avaliacao',
@@ -60,6 +74,12 @@ const AuthenticatedAppClientesRoute =
     path: '/clientes',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppConfiguracoesRoute =
+  AuthenticatedAppConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
 const AuthenticatedAppDocumentosRoute =
   AuthenticatedAppDocumentosRouteImport.update({
     id: '/documentos',
@@ -70,6 +90,12 @@ const AuthenticatedAppFinanceiroRoute =
   AuthenticatedAppFinanceiroRouteImport.update({
     id: '/financeiro',
     path: '/financeiro',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppFornecedoresRoute =
+  AuthenticatedAppFornecedoresRouteImport.update({
+    id: '/fornecedores',
+    path: '/fornecedores',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
 const AuthenticatedAppRelatoriosRoute =
@@ -107,12 +133,16 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/avaliacao': typeof AuthenticatedAppAvaliacaoRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/documentos': typeof AuthenticatedAppDocumentosRoute
   '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
+  '/app/fornecedores': typeof AuthenticatedAppFornecedoresRoute
   '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
   '/app/vendas': typeof AuthenticatedAppVendasRoute
+  '/app/': typeof AuthenticatedAppIndexRoute
   '/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
   '/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
@@ -121,13 +151,16 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/avaliacao': typeof AuthenticatedAppAvaliacaoRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/documentos': typeof AuthenticatedAppDocumentosRoute
   '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
+  '/app/fornecedores': typeof AuthenticatedAppFornecedoresRoute
   '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
   '/app/vendas': typeof AuthenticatedAppVendasRoute
+  '/app': typeof AuthenticatedAppIndexRoute
   '/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
   '/app/estoque': typeof AuthenticatedAppEstoqueIndexRoute
@@ -139,12 +172,16 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/_authenticated/app/admin': typeof AuthenticatedAppAdminRoute
   '/_authenticated/app/avaliacao': typeof AuthenticatedAppAvaliacaoRoute
   '/_authenticated/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/documentos': typeof AuthenticatedAppDocumentosRoute
   '/_authenticated/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
+  '/_authenticated/app/fornecedores': typeof AuthenticatedAppFornecedoresRoute
   '/_authenticated/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
   '/_authenticated/app/vendas': typeof AuthenticatedAppVendasRoute
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/_authenticated/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
   '/_authenticated/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
@@ -156,12 +193,16 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/app'
+    | '/app/admin'
     | '/app/avaliacao'
     | '/app/clientes'
+    | '/app/configuracoes'
     | '/app/documentos'
     | '/app/financeiro'
+    | '/app/fornecedores'
     | '/app/relatorios'
     | '/app/vendas'
+    | '/app/'
     | '/app/estoque/$id'
     | '/app/estoque/novo'
     | '/app/estoque/'
@@ -170,13 +211,16 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
-    | '/app'
+    | '/app/admin'
     | '/app/avaliacao'
     | '/app/clientes'
+    | '/app/configuracoes'
     | '/app/documentos'
     | '/app/financeiro'
+    | '/app/fornecedores'
     | '/app/relatorios'
     | '/app/vendas'
+    | '/app'
     | '/app/estoque/$id'
     | '/app/estoque/novo'
     | '/app/estoque'
@@ -187,12 +231,16 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/app'
+    | '/_authenticated/app/admin'
     | '/_authenticated/app/avaliacao'
     | '/_authenticated/app/clientes'
+    | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/documentos'
     | '/_authenticated/app/financeiro'
+    | '/_authenticated/app/fornecedores'
     | '/_authenticated/app/relatorios'
     | '/_authenticated/app/vendas'
+    | '/_authenticated/app/'
     | '/_authenticated/app/estoque/$id'
     | '/_authenticated/app/estoque/novo'
     | '/_authenticated/app/estoque/'
@@ -242,6 +290,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/admin': {
+      id: '/_authenticated/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AuthenticatedAppAdminRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/_authenticated/app/avaliacao': {
       id: '/_authenticated/app/avaliacao'
       path: '/avaliacao'
@@ -256,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppClientesRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/configuracoes': {
+      id: '/_authenticated/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAppConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/_authenticated/app/documentos': {
       id: '/_authenticated/app/documentos'
       path: '/documentos'
@@ -268,6 +337,13 @@ declare module '@tanstack/react-router' {
       path: '/financeiro'
       fullPath: '/app/financeiro'
       preLoaderRoute: typeof AuthenticatedAppFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/fornecedores': {
+      id: '/_authenticated/app/fornecedores'
+      path: '/fornecedores'
+      fullPath: '/app/fornecedores'
+      preLoaderRoute: typeof AuthenticatedAppFornecedoresRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
     '/_authenticated/app/relatorios': {
@@ -309,24 +385,32 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAppRouteRouteChildren {
+  AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
   AuthenticatedAppAvaliacaoRoute: typeof AuthenticatedAppAvaliacaoRoute
   AuthenticatedAppClientesRoute: typeof AuthenticatedAppClientesRoute
+  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
   AuthenticatedAppDocumentosRoute: typeof AuthenticatedAppDocumentosRoute
   AuthenticatedAppFinanceiroRoute: typeof AuthenticatedAppFinanceiroRoute
+  AuthenticatedAppFornecedoresRoute: typeof AuthenticatedAppFornecedoresRoute
   AuthenticatedAppRelatoriosRoute: typeof AuthenticatedAppRelatoriosRoute
   AuthenticatedAppVendasRoute: typeof AuthenticatedAppVendasRoute
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppEstoqueIdRoute: typeof AuthenticatedAppEstoqueIdRoute
   AuthenticatedAppEstoqueNovoRoute: typeof AuthenticatedAppEstoqueNovoRoute
   AuthenticatedAppEstoqueIndexRoute: typeof AuthenticatedAppEstoqueIndexRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
+  AuthenticatedAppAdminRoute: AuthenticatedAppAdminRoute,
   AuthenticatedAppAvaliacaoRoute: AuthenticatedAppAvaliacaoRoute,
   AuthenticatedAppClientesRoute: AuthenticatedAppClientesRoute,
+  AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
   AuthenticatedAppDocumentosRoute: AuthenticatedAppDocumentosRoute,
   AuthenticatedAppFinanceiroRoute: AuthenticatedAppFinanceiroRoute,
+  AuthenticatedAppFornecedoresRoute: AuthenticatedAppFornecedoresRoute,
   AuthenticatedAppRelatoriosRoute: AuthenticatedAppRelatoriosRoute,
   AuthenticatedAppVendasRoute: AuthenticatedAppVendasRoute,
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppEstoqueIdRoute: AuthenticatedAppEstoqueIdRoute,
   AuthenticatedAppEstoqueNovoRoute: AuthenticatedAppEstoqueNovoRoute,
   AuthenticatedAppEstoqueIndexRoute: AuthenticatedAppEstoqueIndexRoute,
