@@ -29,6 +29,13 @@
       "when": 1793857111042,
       "tag": "0003_sales_module",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793857282216,
+      "tag": "0004_device_reservation",
+      "breakpoints": true
     }
   ]
 }

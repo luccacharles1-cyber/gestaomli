@@ -1034,6 +1034,10 @@ export type Database = {
       is_store_member: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
       safe_uuid: { Args: { _t: string }; Returns: string }
+      set_device_reservation: {
+        Args: { _device_id: string; _note?: string; _reserve: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin"
