@@ -126,6 +126,19 @@ function VendaPage() {
         </div>
       )}
 
+      {s.status === "cancelada" && perms.viewFinance && toCents(s.refund_due) > 0 && (
+        <div className="mb-4 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm print:hidden">
+          <p className="font-semibold">Reembolso ao cliente</p>
+          <p className="mt-1 text-muted-foreground">
+            A devolver: {formatBRL(s.refund_due)} · Já reembolsado: {formatCents(refundedCents)} · <strong className={refundPendingCents > 0 ? "text-destructive" : "text-success"}>Pendente: {formatCents(refundPendingCents)}</strong>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Cancelar a venda não comprova devolução do dinheiro — registre cada reembolso efetivo aqui.</p>
+          {refundPendingCents > 0 && perms.registerPayments && (
+            <Button size="sm" className="mt-2" onClick={() => setRefundOpen(true)}>Registrar reembolso</Button>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 print:hidden">
         <section className="rounded-xl border bg-card p-4 text-sm">
           <p className="mb-2 font-semibold">Aparelhos vendidos</p>
@@ -165,6 +178,63 @@ function VendaPage() {
             <div className="flex justify-between font-semibold"><span>Saldo pendente</span><span className={balance > 0 ? "text-warning-foreground" : ""}>{formatBRL(s.balance)}</span></div>
           </div>
         </section>
+
+        {perms.viewFinance && data.entries.length > 0 && (
+          <section className="rounded-xl border bg-card p-4 text-sm">
+            <p className="mb-2 font-semibold">Movimentos financeiros</p>
+            <ul className="space-y-1.5">
+              {data.entries.map((e) => (
+                <li key={e.id} className="flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block truncate">{e.description}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {[e.paid_at ? formatDate(e.paid_at) : e.due_date ? `vence ${formatDate(e.due_date)}` : null, ENTRY_STATUS_LABEL[e.status], e.reversal_reason ? `Motivo: ${e.reversal_reason}` : null].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className={`font-medium ${e.kind === "entrada" ? "text-success" : "text-destructive"}`}>{e.kind === "entrada" ? "+" : "-"}{formatBRL(e.amount)}</span>
+                    {e.status === "pago" && e.kind === "entrada" && !e.reversal_of && perms.reversePayments && (
+                      <Button size="sm" variant="ghost" title="Estornar" onClick={() => setReverseEntry(e)}><Undo2 className="h-4 w-4" /></Button>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {perms.viewFinance && hasCrediario && (
+          <section className="rounded-xl border bg-card p-4 text-sm">
+            <p className="mb-2 font-semibold">Crediário próprio</p>
+            {data.contract ? (
+              <div className="space-y-2">
+                <p>Financiado: <strong>{formatBRL(data.contract.principal)}</strong> · {data.contract.credit_installments.filter((i) => i.status === "pago").length}/{data.contract.installments_count} parcelas pagas</p>
+                <ul className="space-y-1">
+                  {data.contract.credit_installments.sort((a, b) => a.number - b.number).map((i) => {
+                    const st = installmentStatus(i, todayISO());
+                    return (
+                      <li key={i.id} className="flex justify-between gap-2">
+                        <span>Parcela {i.number} · {formatDate(i.due_date)}</span>
+                        <span className="flex items-center gap-2">
+                          <span>{formatBRL(i.amount)}</span>
+                          <Badge variant="secondary" className={st === "pago" ? "bg-success/15 text-success" : st === "vencido" ? "bg-destructive/10 text-destructive" : ""}>{INSTALLMENT_STATUS_LABEL[st]}</Badge>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Link to="/app/financeiro" className="inline-block text-sm underline">Receber parcelas no Financeiro</Link>
+              </div>
+            ) : perms.approveCredit ? (
+              <div>
+                <p className="mb-2 text-muted-foreground">Esta venda tem valor financiado em crediário. Crie o contrato para gerar o cronograma de parcelas.</p>
+                <Button size="sm" onClick={() => setCreditOpen(true)}>Criar contrato de crediário</Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Venda com crediário aguardando a criação do contrato por um usuário autorizado.</p>
+            )}
+          </section>
+        )}
 
         {data.tradeIns.length > 0 && (
           <section className="rounded-xl border bg-card p-4 text-sm">
