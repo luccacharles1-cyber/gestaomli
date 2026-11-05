@@ -2,16 +2,20 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Ban, Loader2, Printer } from "lucide-react";
+import { ArrowLeft, Ban, HandCoins, Loader2, Printer, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { PAYMENT_LABEL, SALE_STATUS_LABEL } from "@/lib/sales";
-import { formatBRL } from "@/lib/money";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { INSTALLMENT_STATUS_LABEL, installmentStatus, type CreditContract, type CreditInstallment, type FinancialAccount, type FinancialEntry } from "@/lib/finance";
+import { formatBRL, formatCents, parseBRL, toCents } from "@/lib/money";
+import { formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/app/vendas_/$id")({
