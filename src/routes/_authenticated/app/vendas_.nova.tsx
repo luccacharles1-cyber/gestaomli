@@ -57,8 +57,8 @@ function NovaVenda() {
     if (!e) return;
     setEvaluationId(id);
     setTrade((t) => ({ ...t, model: e.model, storage: e.storage, value: centsToInput(toCents(e.offered_value)) }));
-    if (e.client_id && !clientId) setClientId(e.client_id);
   }
+  const clientEvaluations = (data?.evaluations ?? []).filter((e) => clientId && e.client_id === clientId);
 
   const [payments, setPayments] = useState<Payment[]>([{ method: "pix", amount: "", installments: "" }]);
 
@@ -121,7 +121,8 @@ function NovaVenda() {
       const imei2 = normalizeImei(trade.imei2);
       const imeiErr = validateImeiPair(imei1, imei2);
       if (imeiErr) { toast.error(imeiErr); return; }
-      if (!evaluationId) { toast.error("Selecione uma avaliação aprovada para o usado."); return; }
+      if (!finalClientId) { toast.error("Venda com usado na troca exige um cliente cadastrado com avaliação aprovada."); return; }
+      if (!evaluationId || !clientEvaluations.some((e) => e.id === evaluationId)) { toast.error("Selecione uma avaliação aprovada para o usado."); return; }
       if (!trade.model.trim()) { toast.error("Informe o modelo do usado."); return; }
       if ((parseBRLToCents(trade.value) ?? 0) <= 0) { toast.error("Informe o valor acordado do usado."); return; }
       if (!finalClientId && !newClient.name.trim()) { toast.error("Venda com usado na troca exige cliente identificado."); return; }
@@ -194,7 +195,7 @@ function NovaVenda() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Cliente cadastrado</Label>
-              <Select value={clientId} onValueChange={(v) => { setClientId(v === "none" ? "" : v); if (v !== "none") setNewClient({ name: "", whatsapp: "" }); }}>
+              <Select value={clientId} onValueChange={(v) => { setClientId(v === "none" ? "" : v); setEvaluationId(""); if (v !== "none") setNewClient({ name: "", whatsapp: "" }); }}>
                 <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sem cliente / avulso</SelectItem>
@@ -266,8 +267,8 @@ function NovaVenda() {
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2"><Label>Avaliação aprovada *</Label>
                 <Select value={evaluationId} onValueChange={pickEvaluation}>
-                  <SelectTrigger><SelectValue placeholder={data?.evaluations.length ? "Escolha a avaliação" : "Nenhuma avaliação aprovada — avalie em Avaliação de usados"} /></SelectTrigger>
-                  <SelectContent>{(data?.evaluations ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.model} {e.storage} — {formatCents(toCents(e.offered_value))}</SelectItem>)}</SelectContent>
+                  <SelectTrigger><SelectValue placeholder={!clientId ? "Selecione o cliente primeiro" : clientEvaluations.length ? "Escolha a avaliação" : "Nenhuma avaliação aprovada para este cliente"} /></SelectTrigger>
+                  <SelectContent>{clientEvaluations.map((e) => <SelectItem key={e.id} value={e.id}>{e.model} {e.storage} — {formatCents(toCents(e.offered_value))}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Modelo *</Label><Input value={trade.model} onChange={(e) => setTrade({ ...trade, model: e.target.value })} placeholder="iPhone 11" /></div>

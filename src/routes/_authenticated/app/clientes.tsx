@@ -90,8 +90,11 @@ function Clientes() {
     const name = newClient.name.trim();
     if (!name) return;
     const digits = newClient.whatsapp.replace(/\D/g, "");
-    const dup = clients.find((c) => c.name.toLowerCase() === name.toLowerCase() || (digits && (c.whatsapp ?? "").replace(/\D/g, "") === digits));
-    if (dup) { toast.error(`Cliente já cadastrado: ${dup.name}`); return; }
+    const phoneDup = digits ? clients.find((c) => (c.whatsapp ?? "").replace(/\D/g, "") === digits) : undefined;
+    if (phoneDup) { setHistoryFor(null); setDupCheck(phoneDup); return; }
+    const nameDup = clients.some((c) => c.name.trim().toLowerCase() === name.toLowerCase());
+    if (nameDup && !confirmName) { setConfirmName(true); return; }
+    setConfirmName(false);
     if (await run(supabase.from("clients").insert({ store_id: store.id, name, whatsapp: newClient.whatsapp.trim() || null }), "Cliente cadastrado.")) setNewClient({ name: "", whatsapp: "" });
   }
 
