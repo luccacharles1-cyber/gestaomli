@@ -114,7 +114,8 @@ function StoreForm() {
 }
 
 function Team() {
-  const { store, perms, userId } = useStore();
+  const { store, perms, userId, member: me } = useStore();
+  const isOwner = me.role === "owner";
   const qc = useQueryClient();
   const key = ["team", store.id];
   const { data } = useQuery({
@@ -129,7 +130,7 @@ function Team() {
   });
 
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"manager" | "seller">("seller");
+  const [role, setRole] = useState<"owner" | "manager" | "seller">("seller");
   const [newPerms, setNewPerms] = useState<Record<PermKey, boolean>>({
     can_view_costs: false, can_view_finance: false, can_give_discounts: false, can_approve_evaluations: false, can_manage_inventory: false, can_manage_team: false,
     can_register_sales: true, can_cancel_sales: false,
@@ -143,6 +144,19 @@ function Team() {
     toast.success("Convite registrado. A pessoa deve criar conta com este e-mail.");
     setEmail("");
     qc.invalidateQueries({ queryKey: key });
+  }
+
+  async function ownerAction(kind: "grant" | "revoke" | "remove", m: { id: string; email: string | null }) {
+    const label = { grant: "dar perfil de proprietário a", revoke: "retirar o perfil de proprietário de", remove: "remover da loja o proprietário" }[kind];
+    if (!window.confirm(`Confirmar: ${label} ${m.email ?? "este usuário"}?`)) return;
+    const reason = window.prompt("Motivo (fica registrado no histórico):") ?? "";
+    const { error } = kind === "remove"
+      ? await supabase.rpc("remove_owner", { _member_id: m.id, _reason: reason })
+      : await supabase.rpc("set_member_role", { _member_id: m.id, _role: kind === "grant" ? "owner" : "manager", _reason: reason });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Alteração registrada.");
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["session-bootstrap"] });
   }
 
   async function togglePerm(memberId: string, k: PermKey, v: boolean) {
@@ -163,6 +177,13 @@ function Team() {
                   <p className="font-medium">{m.email ?? "Usuário"}{m.user_id === userId && " (você)"}</p>
                   <Badge variant="secondary">{ROLE_LABEL[m.role]}</Badge>
                 </div>
+                {isOwner && (
+                  <div className="flex flex-wrap gap-1">
+                    {m.role !== "owner" && <Button size="sm" variant="outline" onClick={() => ownerAction("grant", m)}>Tornar sócio</Button>}
+                    {m.role === "owner" && <Button size="sm" variant="outline" onClick={() => ownerAction("revoke", m)}>Retirar perfil de proprietário</Button>}
+                    {m.role === "owner" && m.user_id !== userId && <Button size="sm" variant="ghost" className="text-destructive" onClick={() => ownerAction("remove", m)}><Trash2 className="mr-1 h-4 w-4" />Remover sócio</Button>}
+                  </div>
+                )}
                 {editable && (
                   <Button size="sm" variant="ghost" className="text-destructive" onClick={async () => {
                     const { error } = await supabase.from("store_members").delete().eq("id", m.id);
@@ -189,16 +210,16 @@ function Team() {
           <h3 className="font-semibold">Convidar membro</h3>
           <div className="flex flex-wrap gap-2">
             <Input required type="email" placeholder="E-mail" className="flex-1" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Select value={role} onValueChange={(v) => setRole(v as "manager" | "seller")}>
+            <Select value={role} onValueChange={(v) => setRole(v as "owner" | "manager" | "seller")}>
               <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="manager">Gerente</SelectItem><SelectItem value="seller">Vendedor</SelectItem></SelectContent>
+              <SelectContent>{isOwner && <SelectItem value="owner">Sócio (proprietário)</SelectItem>}<SelectItem value="manager">Gerente</SelectItem><SelectItem value="seller">Vendedor</SelectItem></SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
+          {role === "owner" ? <p className="text-sm text-muted-foreground">Sócio tem acesso completo à loja, com login próprio. Ele entra ao criar conta e confirmar este e-mail.</p> : <div className="grid gap-2 sm:grid-cols-2">
             {PERMS.map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 text-sm"><Checkbox checked={newPerms[k]} onCheckedChange={(v) => setNewPerms({ ...newPerms, [k]: v === true })} />{l}</label>
             ))}
-          </div>
+          </div>}
           <Button>Registrar convite</Button>
           <p className="text-xs text-muted-foreground">A pessoa entra na loja automaticamente ao criar conta e confirmar este e-mail.</p>
           {!!data?.invites.length && (
