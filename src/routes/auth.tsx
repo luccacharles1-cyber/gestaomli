@@ -29,17 +29,21 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { redirect: redirectTo } = Route.useSearch();
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const dest = () => redirectTo ?? "/app";
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/app", replace: true });
+      if (data.user) navigate({ to: dest(), replace: true });
     });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, redirectTo]);
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
@@ -47,7 +51,7 @@ function AuthPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) { toast.error(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message); return; }
-    navigate({ to: "/app" });
+    navigate({ to: dest() });
   }
 
   async function onSignup(e: FormEvent) {
@@ -61,7 +65,7 @@ function AuthPage() {
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    if (data.session) navigate({ to: "/app" });
+    if (data.session) navigate({ to: dest() });
     else setNotice("Enviamos um link de confirmação para o seu e-mail. Confirme para entrar.");
   }
 
@@ -80,7 +84,7 @@ function AuthPage() {
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/auth" });
     if (result.error) { toast.error("Não foi possível entrar. Tente novamente."); return; }
     if (result.redirected) return;
-    navigate({ to: "/app" });
+    navigate({ to: dest() });
   }
 
   return (
