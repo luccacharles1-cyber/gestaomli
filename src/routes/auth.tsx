@@ -42,13 +42,13 @@ function AuthPage() {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) return toast.error(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message);
+    if (error) { toast.error(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message); return; }
     navigate({ to: "/app" });
   }
 
   async function onSignup(e: FormEvent) {
     e.preventDefault();
-    if (password.length < 8) return toast.error("A senha deve ter pelo menos 8 caracteres.");
+    if (password.length < 8) { toast.error("A senha deve ter pelo menos 8 caracteres."); return; }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -56,7 +56,7 @@ function AuthPage() {
       options: { emailRedirectTo: `${window.location.origin}/app` },
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (data.session) navigate({ to: "/app" });
     else setNotice("Enviamos um link de confirmação para o seu e-mail. Confirme para entrar.");
   }
@@ -68,13 +68,13 @@ function AuthPage() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setNotice("Se houver uma conta com este e-mail, você receberá um link para criar nova senha.");
   }
 
   async function oauth(provider: "google" | "lovable") {
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) return toast.error("Não foi possível entrar. Tente novamente.");
+    if (result.error) { toast.error("Não foi possível entrar. Tente novamente."); return; }
     if (result.redirected) return;
     navigate({ to: "/app" });
   }

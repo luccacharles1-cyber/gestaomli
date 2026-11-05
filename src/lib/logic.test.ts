@@ -35,7 +35,7 @@ describe("stock capital", () => {
 describe("shared description", () => {
   it("omits price when not requested", () => {
     const text = commercialDescription(
-      { model: "iPhone 13", storage: "128 GB", color: "Azul", condition: "seminovo", battery_health: 88, sale_price: "3000.00" },
+      { model: "iPhone 13", storage: "128 GB", color: "Azul", condition: "seminovo", battery_health: 88, sale_price: 3000 },
       false,
       () => "R$ 3.000,00",
     );

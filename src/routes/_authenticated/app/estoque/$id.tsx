@@ -44,7 +44,7 @@ function DevicePage() {
       return {
         device: d.data,
         costs: c.data,
-        photos: (p.data ?? []).map((x) => ({ ...x, url: urls[x.path] })).filter((x) => x.url),
+        photos: (p.data ?? []).map((x) => ({ ...x, url: urls[x.path] })).filter((x): x is typeof x & { url: string } => !!x.url),
         movements: m.data ?? [],
       };
     },
@@ -82,7 +82,7 @@ function DevicePage() {
 
   async function removePhoto(photo: { id: string; path: string }) {
     const { error } = await supabase.from("device_photos").delete().eq("id", photo.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await supabase.storage.from(BUCKET).remove([photo.path]);
     setCurrent(0);
     refresh();
@@ -91,7 +91,7 @@ function DevicePage() {
   async function makeMain(photoId: string) {
     const min = Math.min(...(data?.photos ?? []).map((p) => p.position));
     const { error } = await supabase.from("device_photos").update({ position: min - 1 }).eq("id", photoId);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setCurrent(0);
     refresh();
   }

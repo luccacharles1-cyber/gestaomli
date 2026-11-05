@@ -30,20 +30,20 @@ export function AccessoriesPanel() {
     e.preventDefault();
     if (busy) return;
     const q = Number(qty);
-    if (!Number.isInteger(q) || q < 0) return toast.error("Quantidade inválida.");
+    if (!Number.isInteger(q) || q < 0) { toast.error("Quantidade inválida."); return; }
     const p = price ? parseBRLToCents(price) : null;
-    if (price && p == null) return toast.error("Preço inválido.");
+    if (price && p == null) { toast.error("Preço inválido."); return; }
     setBusy(true);
     const { data: acc, error } = await supabase
       .from("accessories")
-      .insert({ store_id: store.id, name: name.trim(), quantity: q, sale_price: p != null ? centsToDecimal(p) : null })
+      .insert({ store_id: store.id, name: name.trim(), quantity: q, sale_price: p != null ? p / 100 : null })
       .select("id").single();
     if (!error && perms.viewCosts && cost) {
       const c = parseBRLToCents(cost);
-      if (c != null) await supabase.from("accessory_costs").insert({ accessory_id: acc.id, store_id: store.id, unit_cost: centsToDecimal(c) });
+      if (c != null) await supabase.from("accessory_costs").insert({ accessory_id: acc.id, store_id: store.id, unit_cost: c / 100 });
     }
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setName(""); setQty("1"); setPrice(""); setCost("");
     qc.invalidateQueries({ queryKey: ["accessories", store.id] });
   }
@@ -51,7 +51,7 @@ export function AccessoriesPanel() {
   async function adjust(id: string, quantity: number) {
     if (quantity < 0) return;
     const { error } = await supabase.from("accessories").update({ quantity }).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["accessories", store.id] });
   }
 

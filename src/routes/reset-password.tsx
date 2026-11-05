@@ -27,11 +27,11 @@ function ResetPassword() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (password.length < 8) return toast.error("A senha deve ter pelo menos 8 caracteres.");
+    if (password.length < 8) { toast.error("A senha deve ter pelo menos 8 caracteres."); return; }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) return toast.error("Link inválido ou expirado. Solicite um novo.");
+    if (error) { toast.error("Link inválido ou expirado. Solicite um novo."); return; }
     toast.success("Senha atualizada.");
     navigate({ to: "/app" });
   }
