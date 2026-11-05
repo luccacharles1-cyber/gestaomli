@@ -42,6 +42,7 @@ function VendaPage() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [creditOpen, setCreditOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
+  const [reverseEntry, setReverseEntry] = useState<FinancialEntry | null>(null);
 
   const key = ["sale", id];
   const { data, isLoading, error } = useQuery({
@@ -90,8 +91,6 @@ function VendaPage() {
   const hasCrediario = data.payments.some((p) => p.method === "crediario");
   const refundedCents = data.entries.filter((e) => e.kind === "saida" && e.is_refund && e.status === "pago").reduce((a, e) => a + toCents(e.amount), 0);
   const refundPendingCents = toCents(s.refund_due) - refundedCents;
-  const [reverseEntry, setReverseEntry] = [null as FinancialEntry | null, (_: FinancialEntry | null) => {}] as const;
-  void reverseEntry; void setReverseEntry;
 
   function refresh() {
     qc.invalidateQueries({ queryKey: key });
