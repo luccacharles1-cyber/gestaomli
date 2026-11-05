@@ -68,8 +68,8 @@ function Avaliacao() {
     if (!price.model.trim() || v == null) { toast.error("Informe modelo e valor de referência."); return; }
     const existing = (data?.prices ?? []).find((p) => p.model.toLowerCase() === price.model.trim().toLowerCase() && p.storage === price.storage);
     const { error } = existing
-      ? await supabase.from("evaluation_prices").update({ reference_value: centsToDecimal(v), updated_at: new Date().toISOString() }).eq("id", existing.id)
-      : await supabase.from("evaluation_prices").insert({ store_id: store.id, model: price.model.trim(), storage: price.storage, reference_value: centsToDecimal(v) });
+      ? await supabase.from("evaluation_prices").update({ reference_value: v / 100, updated_at: new Date().toISOString() }).eq("id", existing.id)
+      : await supabase.from("evaluation_prices").insert({ store_id: store.id, model: price.model.trim(), storage: price.storage, reference_value: v / 100 });
     if (error) { toast.error(error.message); return; }
     toast.success("Preço salvo."); setPrice({ model: "", storage: "", value: "" }); refresh();
   }
@@ -78,7 +78,7 @@ function Avaliacao() {
     const neg = adj.amount.trim().startsWith("-");
     const v = parseBRLToCents(adj.amount.replace("-", ""));
     if (!adj.label.trim() || v == null) { toast.error("Informe descrição e valor do ajuste."); return; }
-    const { error } = await supabase.from("evaluation_adjustments").insert({ store_id: store.id, kind: adj.kind, label: adj.label.trim(), amount: centsToDecimal(neg ? -v : v) });
+    const { error } = await supabase.from("evaluation_adjustments").insert({ store_id: store.id, kind: adj.kind, label: adj.label.trim(), amount: (neg ? -v : v) / 100 });
     if (error) { toast.error(error.message); return; }
     toast.success("Ajuste salvo."); setAdj({ ...adj, label: "", amount: "" }); refresh();
   }

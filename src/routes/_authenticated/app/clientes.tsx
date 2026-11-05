@@ -74,7 +74,7 @@ function Clientes() {
     if (opp.budget.trim() && budget == null) { toast.error("Orçamento inválido."); return; }
     if (await run(supabase.from("opportunities").insert({
       store_id: store.id, client_id: opp.client_id, owner_id: opp.owner_id, desired_model: opp.desired_model || null,
-      budget: budget == null ? null : centsToDecimal(budget), notes: opp.notes || null,
+      budget: budget == null ? null : budget / 100, notes: opp.notes || null,
     }), "Oportunidade criada.")) { setOppOpen(false); setOpp({ client_id: "", owner_id: userId, desired_model: "", budget: "", notes: "" }); }
   }
 
