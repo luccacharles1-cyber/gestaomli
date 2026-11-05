@@ -571,7 +571,7 @@ function Contas({ data }: { data: NonNullable<ReturnType<typeof useFinanceData>[
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    const { error } = await supabase.from("financial_accounts").insert({ store_id: store.id, name: name.trim(), type, initial_balance: parseBRLToCents(initial) ?? 0 / 100, initial_balance_date: initialDate });
+    const { error } = await supabase.from("financial_accounts").insert({ store_id: store.id, name: name.trim(), type, initial_balance: (parseBRLToCents(initial) ?? 0) / 100, initial_balance_date: initialDate });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Conta criada."); setName(""); setInitial("");
