@@ -50,6 +50,13 @@
       "when": 1793908936336,
       "tag": "0006_crm_and_evaluations",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793911405759,
+      "tag": "0007_evaluation_client_check",
+      "breakpoints": true
     }
   ]
 }

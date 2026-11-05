@@ -61,6 +61,8 @@ function Clientes() {
   const [task, setTask] = useState({ title: "", due_at: "", client_id: "", opportunity_id: "" });
   const [newClient, setNewClient] = useState({ name: "", whatsapp: "" });
   const [historyFor, setHistoryFor] = useState<string | null>(null);
+  const [confirmName, setConfirmName] = useState(false);
+  const [dupCheck, setDupCheck] = useState<{ id: string; name: string; whatsapp: string | null; email: string | null } | null>(null);
 
   async function run(p: PromiseLike<{ error: { message: string } | null }>, ok: string) {
     const { error } = await p;
@@ -90,8 +92,11 @@ function Clientes() {
     const name = newClient.name.trim();
     if (!name) return;
     const digits = newClient.whatsapp.replace(/\D/g, "");
-    const dup = clients.find((c) => c.name.toLowerCase() === name.toLowerCase() || (digits && (c.whatsapp ?? "").replace(/\D/g, "") === digits));
-    if (dup) { toast.error(`Cliente já cadastrado: ${dup.name}`); return; }
+    const phoneDup = digits ? clients.find((c) => (c.whatsapp ?? "").replace(/\D/g, "") === digits) : undefined;
+    if (phoneDup) { setHistoryFor(null); setDupCheck(phoneDup); return; }
+    const nameDup = clients.some((c) => c.name.trim().toLowerCase() === name.toLowerCase());
+    if (nameDup && !confirmName) { setConfirmName(true); return; }
+    setConfirmName(false);
     if (await run(supabase.from("clients").insert({ store_id: store.id, name, whatsapp: newClient.whatsapp.trim() || null }), "Cliente cadastrado.")) setNewClient({ name: "", whatsapp: "" });
   }
 
@@ -167,10 +172,11 @@ function Clientes() {
 
         <TabsContent value="clientes" className="mt-4 space-y-4">
           <div className="flex flex-wrap gap-2">
-            <Input className="max-w-xs" placeholder="Nome" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} />
+            <Input className="max-w-xs" placeholder="Nome" value={newClient.name} onChange={(e) => { setConfirmName(false); setNewClient({ ...newClient, name: e.target.value }); }} />
             <Input className="max-w-xs" placeholder="WhatsApp" value={newClient.whatsapp} onChange={(e) => setNewClient({ ...newClient, whatsapp: e.target.value })} />
-            <Button variant="outline" onClick={addClient}>Cadastrar cliente</Button>
+            <Button variant="outline" onClick={addClient}>{confirmName ? "Cadastrar mesmo assim" : "Cadastrar cliente"}</Button>
           </div>
+          {confirmName && <p role="alert" className="text-sm text-amber-700 dark:text-amber-400">Já existe cliente com este nome. Confira na lista abaixo; se for outra pessoa, clique em “Cadastrar mesmo assim”.</p>}
           <ul className="divide-y rounded-xl border bg-card">
             {clients.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
@@ -195,6 +201,21 @@ function Clientes() {
             ))}
             {!(data?.sales ?? []).some((s) => s.client_id === historyFor) && <li className="py-2 text-muted-foreground">Nenhuma compra.</li>}
           </ul>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!dupCheck} onOpenChange={(o) => !o && setDupCheck(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>WhatsApp já cadastrado</DialogTitle></DialogHeader>
+          <div className="space-y-1 text-sm">
+            <p>Este número pertence a um cliente existente. Confira antes de continuar:</p>
+            <p className="font-medium">{dupCheck?.name}</p>
+            <p className="text-muted-foreground">{dupCheck?.whatsapp}{dupCheck?.email ? ` • ${dupCheck.email}` : ""}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => { const id = dupCheck?.id ?? null; setDupCheck(null); setHistoryFor(id); }}>Ver compras</Button>
+            <Button onClick={() => { setDupCheck(null); setNewClient({ name: "", whatsapp: "" }); }}>Usar cadastro existente</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
