@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store-context";
 import { BUCKET, signedUrls } from "@/lib/storage";
 import { CONTRACT_TYPE_LABEL, DOC_STATUS_LABEL, type Contract, type ContractTemplate } from "@/lib/finance";
 import { formatBRL } from "@/lib/money";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,7 +118,7 @@ function TemplateDialog({ open, onClose, templates, onSaved }: { open: boolean; 
     const prev = templates.filter((t) => t.type === type);
     const version = (prev[0]?.version ?? 0) + 1;
     await supabase.from("contract_templates").update({ active: false }).eq("store_id", store.id).eq("type", type);
-    const { error } = await supabase.from("contract_templates").insert({ store_id: store.id, type, name: name.trim() || CONTRACT_TYPE_LABEL[type], body, version });
+    const { error } = await supabase.from("contract_templates").insert({ store_id: store.id, type, name: name.trim() || (CONTRACT_TYPE_LABEL[type] ?? type), body, version });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success(`Modelo salvo como versão ${version}. A versão anterior foi arquivada.`);
