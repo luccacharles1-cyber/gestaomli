@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ImagePlus, Pencil, Star, Trash2, ImageOff, Loader2 } from "lucide-react";
+import { ArrowLeft, BookmarkMinus, BookmarkPlus, ImagePlus, Pencil, ShoppingCart, Star, Trash2, ImageOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { STATUS_LABEL, STATUS_VARIANT, daysInStock } from "@/lib/devices";
@@ -88,6 +88,13 @@ function DevicePage() {
     refresh();
   }
 
+  async function reserve(reserveFlag: boolean) {
+    const { error } = await supabase.rpc("set_device_reservation", { _device_id: id, _reserve: reserveFlag });
+    if (error) { toast.error(error.message); return; }
+    toast.success(reserveFlag ? "Aparelho reservado." : "Reserva liberada.");
+    refresh();
+  }
+
   async function makeMain(photoId: string) {
     const min = Math.min(...(data?.photos ?? []).map((p) => p.position));
     const { error } = await supabase.from("device_photos").update({ position: min - 1 }).eq("id", photoId);
@@ -166,6 +173,15 @@ function DevicePage() {
           <p className="font-display text-3xl font-semibold">{d.sale_price != null ? formatBRL(d.sale_price) : "Sem preço"}</p>
           <div className="flex flex-wrap gap-2">
             <ShareDialog device={d} photos={data.photos} />
+            {perms.registerSales && (d.status === "disponivel" || d.status === "reservado") && (
+              <Button asChild><Link to="/app/vendas/nova" search={{ device: d.id }}><ShoppingCart className="mr-1 h-4 w-4" />Vender</Link></Button>
+            )}
+            {perms.registerSales && d.status === "disponivel" && (
+              <Button variant="outline" onClick={() => reserve(true)}><BookmarkPlus className="mr-1 h-4 w-4" />Reservar</Button>
+            )}
+            {perms.registerSales && d.status === "reservado" && (
+              <Button variant="outline" onClick={() => reserve(false)}><BookmarkMinus className="mr-1 h-4 w-4" />Liberar reserva</Button>
+            )}
             {perms.manageInventory && <Button variant="outline" onClick={() => setEditing(true)}><Pencil className="mr-1 h-4 w-4" />Editar</Button>}
           </div>
 
