@@ -137,12 +137,45 @@ function Team() {
     can_register_payments: false, can_reverse_payments: false, can_approve_credit: false, can_renegotiate: false, can_view_contracts: false,
   });
 
+  const [lastLink, setLastLink] = useState<string | null>(null);
+
+  function inviteLink(token: string) {
+    return `${window.location.origin}/convite/${token}`;
+  }
+
+  async function copyLink(token: string) {
+    const link = inviteLink(token);
+    try { await navigator.clipboard.writeText(link); } catch { /* clipboard indisponível */ }
+    setLastLink(link);
+    toast.success("Link copiado.");
+  }
+
   async function invite(e: FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("store_invites").insert({ store_id: store.id, email: email.trim().toLowerCase(), role, ...newPerms });
-    if (error) { toast.error(error.code === "23505" ? "Já existe convite para este e-mail." : error.message); return; }
-    toast.success("Convite registrado. A pessoa deve criar conta com este e-mail.");
+    const { data: created, error } = await supabase.rpc("create_store_invite", {
+      _store_id: store.id, _email: email.trim().toLowerCase(), _role: role, _perms: newPerms,
+    });
+    if (error) { toast.error(error.message); return; }
+    const token = (created as { token?: string } | null)?.token;
+    if (token) await copyLink(token);
+    toast.success("Convite criado. O e-mail NÃO foi enviado — envie o link manualmente.");
     setEmail("");
+    qc.invalidateQueries({ queryKey: key });
+  }
+
+  async function resend(inviteId: string) {
+    const { data, error } = await supabase.rpc("resend_store_invite", { _invite_id: inviteId });
+    if (error) { toast.error(error.message); return; }
+    const token = (data as { token?: string } | null)?.token;
+    if (token) await copyLink(token);
+    toast.success("Convite renovado. O e-mail NÃO foi enviado — envie o link manualmente.");
+    qc.invalidateQueries({ queryKey: key });
+  }
+
+  async function revoke(inviteId: string) {
+    const { error } = await supabase.rpc("revoke_store_invite", { _invite_id: inviteId });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Convite revogado.");
     qc.invalidateQueries({ queryKey: key });
   }
 
