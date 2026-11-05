@@ -46,11 +46,7 @@ function AdminPage() {
     },
   });
   if (isLoading) return <div className="grid min-h-screen place-items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
-  if (!isAdmin) return (
-    <div className="grid min-h-screen place-items-center p-6 text-center">
-      <div><p className="font-semibold">Acesso restrito ao administrador da plataforma.</p><Link to="/app" className="mt-3 inline-block text-sm underline">Voltar para a loja</Link></div>
-    </div>
-  );
+  if (!isAdmin) return <AdminDenied />;
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
