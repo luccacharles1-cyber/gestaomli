@@ -30,6 +30,34 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
+function AdminDenied() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  return (
+    <div className="grid min-h-screen place-items-center p-6 text-center">
+      <div>
+        <p className="font-semibold">Acesso restrito ao administrador da plataforma.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Sua conta de loja não tem autorização para esta área.</p>
+        <div className="mt-4 flex justify-center gap-3">
+          <Link to="/app" className="mt-2 inline-block text-sm underline">Voltar para a loja</Link>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              await qc.cancelQueries();
+              qc.clear();
+              await supabase.auth.signOut();
+              navigate({ to: "/auth", search: { redirect: "/admin" }, replace: true });
+            }}
+          >
+            Sair e trocar de conta
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type StoreRow = {
   id: string; name: string; email: string | null; phone: string | null; created_at: string; owners: string[]; users: number; user_limit: number | null;
   plan: string | null; contracted_price: number | null; billing_status: string; access_status: string; access_until: string | null; renewal_canceled: boolean; access_ok: boolean;
