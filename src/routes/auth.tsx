@@ -10,6 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
+    const r = search.redirect;
+    return { redirect: typeof r === "string" && r.startsWith("/") && !r.startsWith("//") ? r : undefined };
+  },
   head: () => ({
     meta: [
       { title: "Entrar — MLI Gestão" },
