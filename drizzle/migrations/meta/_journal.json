@@ -57,6 +57,13 @@
       "when": 1793911405759,
       "tag": "0007_evaluation_client_check",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793912753947,
+      "tag": "0008_platform_admin_partners_notifications",
+      "breakpoints": true
     }
   ]
 }

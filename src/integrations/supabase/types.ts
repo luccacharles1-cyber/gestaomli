@@ -85,6 +85,47 @@ export type Database = {
           },
         ]
       }
+      admin_audit: {
+        Row: {
+          action: string
+          actor: string | null
+          after: Json | null
+          before: Json | null
+          created_at: string
+          id: string
+          reason: string | null
+          store_id: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          after?: Json | null
+          before?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -1196,6 +1237,54 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          read_at: string | null
+          sale_id: string | null
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          read_at?: string | null
+          sale_id?: string | null
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          read_at?: string | null
+          sale_id?: string | null
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opportunities: {
         Row: {
           budget: number | null
@@ -1262,6 +1351,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          monthly_price: number
+          name: string
+          updated_at: string
+          user_limit: number | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          monthly_price: number
+          name: string
+          updated_at?: string
+          user_limit?: number | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          monthly_price?: number
+          name?: string
+          updated_at?: string
+          user_limit?: number | null
+        }
+        Relationships: []
       }
       product_grants: {
         Row: {
@@ -1750,24 +1872,73 @@ export type Database = {
       }
       store_subscriptions: {
         Row: {
+          access_reason: string | null
+          access_status: string
+          access_until: string | null
+          billing_status: string
+          contracted_price: number | null
+          external_customer_id: string | null
+          external_subscription_id: string | null
+          next_due_date: string | null
+          paid_period_end: string | null
+          paid_period_start: string | null
           plan: string
+          plan_id: string | null
+          provider: string | null
+          renewal_canceled: boolean
           status: string
           store_id: string
           updated_at: string
+          user_limit: number | null
         }
         Insert: {
+          access_reason?: string | null
+          access_status?: string
+          access_until?: string | null
+          billing_status?: string
+          contracted_price?: number | null
+          external_customer_id?: string | null
+          external_subscription_id?: string | null
+          next_due_date?: string | null
+          paid_period_end?: string | null
+          paid_period_start?: string | null
           plan?: string
+          plan_id?: string | null
+          provider?: string | null
+          renewal_canceled?: boolean
           status?: string
           store_id: string
           updated_at?: string
+          user_limit?: number | null
         }
         Update: {
+          access_reason?: string | null
+          access_status?: string
+          access_until?: string | null
+          billing_status?: string
+          contracted_price?: number | null
+          external_customer_id?: string | null
+          external_subscription_id?: string | null
+          next_due_date?: string | null
+          paid_period_end?: string | null
+          paid_period_start?: string | null
           plan?: string
+          plan_id?: string | null
+          provider?: string | null
+          renewal_canceled?: boolean
           status?: string
           store_id?: string
           updated_at?: string
+          user_limit?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "store_subscriptions_plan_fk"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_subscriptions_store_id_fkey"
             columns: ["store_id"]
@@ -1849,6 +2020,22 @@ export type Database = {
     }
     Functions: {
       accept_my_invites: { Args: never; Returns: number }
+      admin_assign_plan: {
+        Args: { _plan_id: string; _reason: string; _store_id: string }
+        Returns: undefined
+      }
+      admin_overview: { Args: never; Returns: Json }
+      admin_set_access: {
+        Args: {
+          _action: string
+          _reason: string
+          _store_id: string
+          _until: string
+        }
+        Returns: undefined
+      }
+      admin_store_detail: { Args: { _store_id: string }; Returns: Json }
+      admin_stores: { Args: never; Returns: Json }
       cancel_sale: {
         Args: { _reason: string; _sale_id: string }
         Returns: undefined
@@ -1920,7 +2107,9 @@ export type Database = {
         Returns: boolean
       }
       is_store_member: { Args: { _store_id: string }; Returns: boolean }
+      is_store_member_any: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      mark_notifications_read: { Args: { _ids: string[] }; Returns: undefined }
       receive_installments: {
         Args: {
           _account_id: string
@@ -1957,6 +2146,11 @@ export type Database = {
         }
         Returns: string
       }
+      remove_owner: {
+        Args: { _member_id: string; _reason: string }
+        Returns: undefined
+      }
+      require_platform_admin: { Args: never; Returns: undefined }
       reverse_receipt: {
         Args: { _entry_id: string; _reason: string }
         Returns: string
@@ -1966,6 +2160,15 @@ export type Database = {
         Args: { _device_id: string; _note?: string; _reserve: boolean }
         Returns: undefined
       }
+      set_member_role: {
+        Args: {
+          _member_id: string
+          _reason: string
+          _role: Database["public"]["Enums"]["store_role"]
+        }
+        Returns: undefined
+      }
+      store_access_ok: { Args: { _store_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin"
