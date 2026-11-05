@@ -381,3 +381,177 @@ function VendaPage() {
     </div>
   );
 }
+
+function Fld({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+}
+
+function ReceiptDialog({ open, onClose, saleId, balanceCents, accounts, onSaved }: { open: boolean; onClose: () => void; saleId: string; balanceCents: number; accounts: FinancialAccount[]; onSaved: () => void }) {
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [method, setMethod] = useState("pix");
+  const [date, setDate] = useState(todayISO());
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    const cents = parseBRL(amount);
+    if (cents <= 0) { toast.error("Informe um valor válido."); return; }
+    if (cents > balanceCents) { toast.error(`O valor excede o saldo devedor de ${formatCents(balanceCents)}. Troco ou crédito exigem tratamento explícito.`); return; }
+    if (!accountId) { toast.error("Escolha a conta de destino."); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc("register_sale_receipt", {
+      _sale_id: saleId, _amount: cents / 100, _account_id: accountId, _method: method, _received_at: date, _note: note, _client_token: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Recebimento registrado. O saldo foi atualizado e o recibo original não foi alterado.");
+    setAmount(""); setNote("");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Registrar recebimento</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-3">
+          <p className="text-sm text-muted-foreground">Saldo devedor: <strong>{formatCents(balanceCents)}</strong>. Isso não gera outra venda nem modifica o recibo original.</p>
+          <Fld label="Valor (R$)"><Input required value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder={formatCents(balanceCents)} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Conta de destino"><Select value={accountId} onValueChange={setAccountId}><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent></Select></Fld>
+            <Fld label="Meio de pagamento"><Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PAYMENT_LABEL).filter(([k]) => k !== "crediario").map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select></Fld>
+          </div>
+          <Fld label="Data"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Fld>
+          <Fld label="Observação (opcional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Fld>
+          <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancelar</Button><Button disabled={busy}>{busy ? "Registrando…" : "Confirmar recebimento"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CreditDialog({ open, onClose, saleId, principal, onSaved }: { open: boolean; onClose: () => void; saleId: string; principal: number; onSaved: () => void }) {
+  const [count, setCount] = useState("6");
+  const [firstDue, setFirstDue] = useState(todayISO());
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const n = Math.max(1, Math.min(60, Number(count) || 1));
+  const preview = buildSchedule(toCents(principal), n, firstDue);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("create_credit_contract", {
+      _sale_id: saleId, _installments: n, _first_due: firstDue, _notes: notes, _client_token: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Contrato de crediário criado sem juros.");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Criar contrato de crediário</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-3">
+          <p className="text-sm text-muted-foreground">Principal financiado: <strong>{formatBRL(principal)}</strong> · sem juros. A soma das parcelas é sempre igual ao principal; a diferença de centavos fica na última parcela.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Quantidade de parcelas"><Input required type="number" min={1} max={60} value={count} onChange={(e) => setCount(e.target.value)} /></Fld>
+            <Fld label="Primeiro vencimento"><Input required type="date" value={firstDue} onChange={(e) => setFirstDue(e.target.value)} /></Fld>
+          </div>
+          <Fld label="Condições pactuadas (opcional)"><Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: combinado em balcão, sem encargos" /></Fld>
+          {preview.length > 0 && (
+            <div className="rounded-lg border p-3 text-sm">
+              <p className="mb-1 font-semibold">Cronograma</p>
+              <ul className="grid grid-cols-2 gap-x-4">
+                {preview.map((p) => <li key={p.number} className="flex justify-between"><span>{p.number}ª · {formatDate(p.dueDate)}</span><span>{formatCents(p.amountCents)}</span></li>)}
+              </ul>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancelar</Button><Button disabled={busy}>{busy ? "Criando…" : "Criar contrato"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RefundDialog({ open, onClose, saleId, pendingCents, accounts, onSaved }: { open: boolean; onClose: () => void; saleId: string; pendingCents: number; accounts: FinancialAccount[]; onSaved: () => void }) {
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [method, setMethod] = useState("pix");
+  const [date, setDate] = useState(todayISO());
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    const cents = parseBRL(amount);
+    if (cents <= 0 || cents > pendingCents) { toast.error(`Valor deve ser entre 0,01 e ${formatCents(pendingCents)}.`); return; }
+    if (!accountId) { toast.error("Escolha a conta de origem."); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc("register_refund", {
+      _sale_id: saleId, _amount: cents / 100, _account_id: accountId, _method: method, _paid_at: date, _note: note, _client_token: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Reembolso registrado.");
+    setAmount(""); setNote("");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Registrar reembolso</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-3">
+          <p className="text-sm text-muted-foreground">Reembolso pendente: <strong>{formatCents(pendingCents)}</strong>.</p>
+          <Fld label="Valor (R$)"><Input required value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder={formatCents(pendingCents)} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Conta de origem"><Select value={accountId} onValueChange={setAccountId}><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent></Select></Fld>
+            <Fld label="Meio"><Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PAYMENT_LABEL).filter(([k]) => k !== "crediario").map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select></Fld>
+          </div>
+          <Fld label="Data"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Fld>
+          <Fld label="Observação (opcional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Fld>
+          <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancelar</Button><Button disabled={busy}>{busy ? "Registrando…" : "Confirmar reembolso"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReverseEntryDialog({ entry, onClose, onSaved }: { entry: FinancialEntry | null; onClose: () => void; onSaved: () => void }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!entry || busy) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("reverse_receipt", { _entry_id: entry.id, _reason: reason });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Estorno registrado com movimento reverso.");
+    setReason("");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={!!entry} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Estornar recebimento</DialogTitle></DialogHeader>
+        {entry && (
+          <form onSubmit={save} className="space-y-3">
+            <p className="text-sm text-muted-foreground">{entry.description} · {formatBRL(entry.amount)}. O lançamento original é preservado e um movimento reverso rastreável é criado.</p>
+            <Fld label="Motivo do estorno"><Input required value={reason} onChange={(e) => setReason(e.target.value)} /></Fld>
+            <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Voltar</Button><Button variant="destructive" disabled={busy || !reason.trim()}>{busy ? "Estornando…" : "Confirmar estorno"}</Button></DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
