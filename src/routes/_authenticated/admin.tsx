@@ -71,8 +71,10 @@ function Stat({ label, value, hint }: { label: string; value: string | number; h
   return <div className="rounded-xl border bg-card p-4"><p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-semibold">{value}</p>{hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}</div>;
 }
 
+type Overview = { total: number; legacy: number; trial: number; trial_expired: number; paid: number; courtesy: number; past_due: number; suspended: number; renewal_canceled: number; mrr_stores: number; mrr: number };
+
 function Overview() {
-  const { data, error } = useQuery({ queryKey: ["admin-overview"], queryFn: async () => { const r = await supabase.rpc("admin_overview"); if (r.error) throw r.error; return r.data as Record<string, number>; } });
+  const { data, error } = useQuery({ queryKey: ["admin-overview"], queryFn: async () => { const r = await supabase.rpc("admin_overview"); if (r.error) throw r.error; return r.data as unknown as Overview; } });
   if (error) return <p className="text-destructive">{(error as Error).message}</p>;
   if (!data) return null;
   return (
