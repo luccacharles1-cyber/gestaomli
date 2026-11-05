@@ -27,6 +27,7 @@ import { Route as AuthenticatedAppVendasRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppEstoqueIndexRouteImport } from './routes/_authenticated/app/estoque/index'
 import { Route as AuthenticatedAppEstoqueIdRouteImport } from './routes/_authenticated/app/estoque/$id'
 import { Route as AuthenticatedAppEstoqueNovoRouteImport } from './routes/_authenticated/app/estoque/novo'
+import { Route as AuthenticatedAppVendasNovaRouteImport } from './routes/_authenticated/app/vendas.nova'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -127,6 +128,12 @@ const AuthenticatedAppEstoqueNovoRoute =
     path: '/estoque/novo',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppVendasNovaRoute =
+  AuthenticatedAppVendasNovaRouteImport.update({
+    id: '/nova',
+    path: '/nova',
+    getParentRoute: () => AuthenticatedAppVendasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -141,10 +148,11 @@ export interface FileRoutesByFullPath {
   '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
   '/app/fornecedores': typeof AuthenticatedAppFornecedoresRoute
   '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
-  '/app/vendas': typeof AuthenticatedAppVendasRoute
+  '/app/vendas': typeof AuthenticatedAppVendasRouteWithChildren
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
+  '/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
   '/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
 }
 export interface FileRoutesByTo {
@@ -159,10 +167,11 @@ export interface FileRoutesByTo {
   '/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
   '/app/fornecedores': typeof AuthenticatedAppFornecedoresRoute
   '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
-  '/app/vendas': typeof AuthenticatedAppVendasRoute
+  '/app/vendas': typeof AuthenticatedAppVendasRouteWithChildren
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
+  '/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
   '/app/estoque': typeof AuthenticatedAppEstoqueIndexRoute
 }
 export interface FileRoutesById {
@@ -180,10 +189,11 @@ export interface FileRoutesById {
   '/_authenticated/app/financeiro': typeof AuthenticatedAppFinanceiroRoute
   '/_authenticated/app/fornecedores': typeof AuthenticatedAppFornecedoresRoute
   '/_authenticated/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
-  '/_authenticated/app/vendas': typeof AuthenticatedAppVendasRoute
+  '/_authenticated/app/vendas': typeof AuthenticatedAppVendasRouteWithChildren
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/_authenticated/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
+  '/_authenticated/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
   '/_authenticated/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
 }
 export interface FileRouteTypes {
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/estoque/$id'
     | '/app/estoque/novo'
+    | '/app/vendas/nova'
     | '/app/estoque/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/estoque/$id'
     | '/app/estoque/novo'
+    | '/app/vendas/nova'
     | '/app/estoque'
   id:
     | '__root__'
@@ -243,6 +255,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/'
     | '/_authenticated/app/estoque/$id'
     | '/_authenticated/app/estoque/novo'
+    | '/_authenticated/app/vendas/nova'
     | '/_authenticated/app/estoque/'
   fileRoutesById: FileRoutesById
 }
@@ -381,8 +394,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppEstoqueNovoRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/vendas/nova': {
+      id: '/_authenticated/app/vendas/nova'
+      path: '/nova'
+      fullPath: '/app/vendas/nova'
+      preLoaderRoute: typeof AuthenticatedAppVendasNovaRouteImport
+      parentRoute: typeof AuthenticatedAppVendasRoute
+    }
   }
 }
+
+interface AuthenticatedAppVendasRouteChildren {
+  AuthenticatedAppVendasNovaRoute: typeof AuthenticatedAppVendasNovaRoute
+}
+
+const AuthenticatedAppVendasRouteChildren: AuthenticatedAppVendasRouteChildren =
+  {
+    AuthenticatedAppVendasNovaRoute: AuthenticatedAppVendasNovaRoute,
+  }
+
+const AuthenticatedAppVendasRouteWithChildren =
+  AuthenticatedAppVendasRoute._addFileChildren(
+    AuthenticatedAppVendasRouteChildren,
+  )
 
 interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
@@ -393,7 +427,7 @@ interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppFinanceiroRoute: typeof AuthenticatedAppFinanceiroRoute
   AuthenticatedAppFornecedoresRoute: typeof AuthenticatedAppFornecedoresRoute
   AuthenticatedAppRelatoriosRoute: typeof AuthenticatedAppRelatoriosRoute
-  AuthenticatedAppVendasRoute: typeof AuthenticatedAppVendasRoute
+  AuthenticatedAppVendasRoute: typeof AuthenticatedAppVendasRouteWithChildren
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppEstoqueIdRoute: typeof AuthenticatedAppEstoqueIdRoute
   AuthenticatedAppEstoqueNovoRoute: typeof AuthenticatedAppEstoqueNovoRoute
@@ -409,7 +443,7 @@ const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppFinanceiroRoute: AuthenticatedAppFinanceiroRoute,
   AuthenticatedAppFornecedoresRoute: AuthenticatedAppFornecedoresRoute,
   AuthenticatedAppRelatoriosRoute: AuthenticatedAppRelatoriosRoute,
-  AuthenticatedAppVendasRoute: AuthenticatedAppVendasRoute,
+  AuthenticatedAppVendasRoute: AuthenticatedAppVendasRouteWithChildren,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppEstoqueIdRoute: AuthenticatedAppEstoqueIdRoute,
   AuthenticatedAppEstoqueNovoRoute: AuthenticatedAppEstoqueNovoRoute,
