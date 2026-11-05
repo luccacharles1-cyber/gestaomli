@@ -71,6 +71,13 @@
       "when": 1793915163385,
       "tag": "0009_invite_tokens_and_acceptance",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793915372166,
+      "tag": "0010_fix_invite_token_schema_qualification",
+      "breakpoints": true
     }
   ]
 }
