@@ -1737,10 +1737,15 @@ export type Database = {
           can_view_finance: boolean
           created_at: string
           email: string
+          expires_at: string | null
           id: string
           invited_by: string
+          last_sent_at: string | null
+          revoked_at: string | null
           role: Database["public"]["Enums"]["store_role"]
+          send_count: number
           store_id: string
+          token: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -1759,10 +1764,15 @@ export type Database = {
           can_view_finance?: boolean
           created_at?: string
           email: string
+          expires_at?: string | null
           id?: string
           invited_by?: string
+          last_sent_at?: string | null
+          revoked_at?: string | null
           role?: Database["public"]["Enums"]["store_role"]
+          send_count?: number
           store_id: string
+          token?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -1781,10 +1791,15 @@ export type Database = {
           can_view_finance?: boolean
           created_at?: string
           email?: string
+          expires_at?: string | null
           id?: string
           invited_by?: string
+          last_sent_at?: string | null
+          revoked_at?: string | null
           role?: Database["public"]["Enums"]["store_role"]
+          send_count?: number
           store_id?: string
+          token?: string | null
         }
         Relationships: [
           {
@@ -2019,6 +2034,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: { Args: { _token: string }; Returns: string }
       accept_my_invites: { Args: never; Returns: number }
       admin_assign_plan: {
         Args: { _plan_id: string; _reason: string; _store_id: string }
@@ -2091,10 +2107,20 @@ export type Database = {
         Returns: string
       }
       create_store: { Args: { _name: string }; Returns: string }
+      create_store_invite: {
+        Args: {
+          _email: string
+          _perms?: Json
+          _role: Database["public"]["Enums"]["store_role"]
+          _store_id: string
+        }
+        Returns: Json
+      }
       decide_evaluation: {
         Args: { _approve: boolean; _id: string }
         Returns: undefined
       }
+      get_invite_by_token: { Args: { _token: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2151,10 +2177,12 @@ export type Database = {
         Returns: undefined
       }
       require_platform_admin: { Args: never; Returns: undefined }
+      resend_store_invite: { Args: { _invite_id: string }; Returns: Json }
       reverse_receipt: {
         Args: { _entry_id: string; _reason: string }
         Returns: string
       }
+      revoke_store_invite: { Args: { _invite_id: string }; Returns: undefined }
       safe_uuid: { Args: { _t: string }; Returns: string }
       set_device_reservation: {
         Args: { _device_id: string; _note?: string; _reserve: boolean }

@@ -137,12 +137,45 @@ function Team() {
     can_register_payments: false, can_reverse_payments: false, can_approve_credit: false, can_renegotiate: false, can_view_contracts: false,
   });
 
+  const [lastLink, setLastLink] = useState<string | null>(null);
+
+  function inviteLink(token: string) {
+    return `${window.location.origin}/convite/${token}`;
+  }
+
+  async function copyLink(token: string) {
+    const link = inviteLink(token);
+    try { await navigator.clipboard.writeText(link); } catch { /* clipboard indisponível */ }
+    setLastLink(link);
+    toast.success("Link copiado.");
+  }
+
   async function invite(e: FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("store_invites").insert({ store_id: store.id, email: email.trim().toLowerCase(), role, ...newPerms });
-    if (error) { toast.error(error.code === "23505" ? "Já existe convite para este e-mail." : error.message); return; }
-    toast.success("Convite registrado. A pessoa deve criar conta com este e-mail.");
+    const { data: created, error } = await supabase.rpc("create_store_invite", {
+      _store_id: store.id, _email: email.trim().toLowerCase(), _role: role, _perms: newPerms,
+    });
+    if (error) { toast.error(error.message); return; }
+    const token = (created as { token?: string } | null)?.token;
+    if (token) await copyLink(token);
+    toast.success("Convite criado. O e-mail NÃO foi enviado — envie o link manualmente.");
     setEmail("");
+    qc.invalidateQueries({ queryKey: key });
+  }
+
+  async function resend(inviteId: string) {
+    const { data, error } = await supabase.rpc("resend_store_invite", { _invite_id: inviteId });
+    if (error) { toast.error(error.message); return; }
+    const token = (data as { token?: string } | null)?.token;
+    if (token) await copyLink(token);
+    toast.success("Convite renovado. O e-mail NÃO foi enviado — envie o link manualmente.");
+    qc.invalidateQueries({ queryKey: key });
+  }
+
+  async function revoke(inviteId: string) {
+    const { error } = await supabase.rpc("revoke_store_invite", { _invite_id: inviteId });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Convite revogado.");
     qc.invalidateQueries({ queryKey: key });
   }
 
@@ -215,21 +248,37 @@ function Team() {
               <SelectContent>{isOwner && <SelectItem value="owner">Sócio (proprietário)</SelectItem>}<SelectItem value="manager">Gerente</SelectItem><SelectItem value="seller">Vendedor</SelectItem></SelectContent>
             </Select>
           </div>
-          {role === "owner" ? <p className="text-sm text-muted-foreground">Sócio tem acesso completo à loja, com login próprio. Ele entra ao criar conta e confirmar este e-mail.</p> : <div className="grid gap-2 sm:grid-cols-2">
+          {role === "owner" ? <p className="text-sm text-muted-foreground">Sócio tem acesso completo à loja, com login próprio. Ele entra ao aceitar o convite com o e-mail convidado. Ser sócio não dá acesso à administração da plataforma.</p> : <div className="grid gap-2 sm:grid-cols-2">
             {PERMS.map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 text-sm"><Checkbox checked={newPerms[k]} onCheckedChange={(v) => setNewPerms({ ...newPerms, [k]: v === true })} />{l}</label>
             ))}
           </div>}
-          <Button>Registrar convite</Button>
-          <p className="text-xs text-muted-foreground">A pessoa entra na loja automaticamente ao criar conta e confirmar este e-mail.</p>
+          <Button>Criar convite</Button>
+          <p className="text-xs text-muted-foreground">
+            O envio de e-mail ainda não está configurado: <strong>nenhum e-mail é enviado</strong>. Copie o link do convite e envie manualmente (WhatsApp, etc.).
+            O convite vale por 7 dias, só pode ser usado uma vez e exige que a pessoa entre com o e-mail convidado.
+          </p>
+          {lastLink && (
+            <div className="rounded-lg border border-gold/40 bg-gold-soft p-3 text-sm">
+              <p className="font-medium">Link do convite (e-mail não enviado):</p>
+              <p className="mt-1 break-all text-xs">{lastLink}</p>
+            </div>
+          )}
           {!!data?.invites.length && (
             <ul className="divide-y border-t pt-2 text-sm">
-              {data.invites.map((i) => (
-                <li key={i.id} className="flex items-center justify-between py-2">
-                  <span>{i.email} · {ROLE_LABEL[i.role]} · pendente</span>
-                  <Button type="button" size="sm" variant="ghost" onClick={async () => { await supabase.from("store_invites").delete().eq("id", i.id); qc.invalidateQueries({ queryKey: key }); }}>Cancelar</Button>
-                </li>
-              ))}
+              {data.invites.map((i) => {
+                const status = i.revoked_at ? "revogado" : i.expires_at && new Date(i.expires_at) < new Date() ? "vencido" : "pendente";
+                return (
+                  <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                    <span>{i.email} · {ROLE_LABEL[i.role]} · <Badge variant={status === "pendente" ? "secondary" : "outline"}>{status}</Badge></span>
+                    <div className="flex gap-1">
+                      {status !== "revogado" && i.token && <Button type="button" size="sm" variant="outline" onClick={() => copyLink(i.token!)}>Copiar link</Button>}
+                      {status !== "revogado" && <Button type="button" size="sm" variant="outline" onClick={() => resend(i.id)}>Reenviar</Button>}
+                      {status !== "revogado" && <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => revoke(i.id)}>Revogar</Button>}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </form>
