@@ -356,11 +356,17 @@ function VendaPage() {
         </div>
       </div>
 
+      <ReceiptDialog open={receiptOpen} onClose={() => setReceiptOpen(false)} saleId={id} balanceCents={toCents(s.balance)} accounts={data.accounts} onSaved={refresh} />
+      <CreditDialog open={creditOpen} onClose={() => setCreditOpen(false)} saleId={id} principal={data.payments.filter((p) => p.method === "crediario").reduce((a, p) => a + Number(p.amount), 0)} onSaved={refresh} />
+      <RefundDialog open={refundOpen} onClose={() => setRefundOpen(false)} saleId={id} pendingCents={refundPendingCents} accounts={data.accounts} onSaved={refresh} />
+      <ReverseEntryDialog entry={reverseEntry} onClose={() => setReverseEntry(null)} onSaved={refresh} />
+
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Cancelar venda nº {s.receipt_number}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             Os aparelhos voltam ao estoque como disponíveis e o usado da troca é marcado como devolvido ao cliente.
+            Recebíveis em aberto são cancelados e o valor recebido fica registrado como reembolso pendente — a devolução do dinheiro é registrada à parte.
             A venda e o recibo originais são preservados no histórico.
           </p>
           <Textarea rows={3} placeholder="Motivo do cancelamento" value={reason} onChange={(e) => setReason(e.target.value)} />
