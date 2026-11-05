@@ -86,6 +86,22 @@ function Dashboard() {
   const revenueCents = (data?.sales ?? []).reduce((acc, s) => acc + toCents(s.total), 0);
   const salesCount = data?.sales.length ?? 0;
 
+  const fin = useMemo(() => {
+    if (!perms.viewFinance || !data) return null;
+    const today = todayISO();
+    const entries = data.finEntries;
+    const saldo = data.finAccounts.filter((a) => a.active).reduce((acc, a) => acc + accountBalanceCents(a, entries, a.id, toCents), 0);
+    const open = entries.filter((e) => e.status === "pendente" || e.status === "parcial");
+    const aReceber = open.filter((e) => e.kind === "entrada").reduce((a, e) => a + toCents(e.amount) - toCents(e.paid_amount), 0);
+    const aPagar = open.filter((e) => e.kind === "saida").reduce((a, e) => a + toCents(e.amount) - toCents(e.paid_amount), 0);
+    const credAtraso = data.finInstallments.filter((i) => installmentStatus(i, today) === "vencido").reduce((a, i) => a + toCents(i.amount) - toCents(i.paid_amount), 0);
+    const inPeriod = (d: string | null) => !!d && d >= range.gte.slice(0, 10) && d <= range.lte.slice(0, 10);
+    const operational = entries.filter((e) => !e.is_transfer && !e.is_equity && e.status !== "cancelado" && e.status !== "estornado");
+    const netComp = operational.filter((e) => inPeriod(e.competence_date)).reduce((a, e) => a + (e.kind === "entrada" ? toCents(e.amount) : -toCents(e.amount)), 0);
+    const netCaixa = operational.filter((e) => e.status === "pago" && inPeriod(e.paid_at)).reduce((a, e) => a + (e.kind === "entrada" ? toCents(e.paid_amount) : -toCents(e.paid_amount)), 0);
+    return { saldo, aReceber, aPagar, credAtraso, netComp, netCaixa };
+  }, [data, perms.viewFinance, range]);
+
   const checklist = [
     { done: !!(store.document && store.phone && store.address), label: "Completar dados da loja", to: "/app/configuracoes" as const },
     { done: !!store.logo_path, label: "Enviar logo da loja", to: "/app/configuracoes" as const },
@@ -132,20 +148,26 @@ function Dashboard() {
       </section>
 
       <section>
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Indicadores do período</h2>
-          <Badge variant="outline" className="text-xs">Competência por data da venda</Badge>
+          <Badge variant="outline" className="text-xs">Vendas por data da venda</Badge>
+          {perms.viewFinance && (
+            <ToggleGroup type="single" value={finView} onValueChange={(v) => v && setFinView(v as "competencia" | "caixa")} variant="outline" size="sm">
+              <ToggleGroupItem value="competencia" className="text-xs">Competência</ToggleGroupItem>
+              <ToggleGroupItem value="caixa" className="text-xs">Caixa</ToggleGroupItem>
+            </ToggleGroup>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Kpi label="Faturamento" value={formatCents(revenueCents)} />
           {perms.viewCosts && <Kpi label="Lucro bruto das vendas" value={data?.grossProfit != null ? formatCents(data.grossProfit) : "…"} />}
-          {perms.viewFinance && <Kpi label="Resultado líquido gerencial" value={formatCents(0)} note="Financeiro em desenvolvimento" />}
+          {perms.viewFinance && <Kpi label="Resultado líquido gerencial" value={fin ? formatCents(finView === "competencia" ? fin.netComp : fin.netCaixa) : "…"} note={finView === "competencia" ? "Por competência: entradas menos saídas operacionais do período" : "Fluxo de caixa: só o que entrou e saiu de fato"} />}
           {perms.viewCosts && <Kpi label="Margem bruta" value={revenueCents > 0 && data?.grossProfit != null ? `${((data.grossProfit / revenueCents) * 100).toFixed(1).replace(".", ",")}%` : "—"} />}
           <Kpi label="Quantidade de vendas" value={String(salesCount)} />
           <Kpi label="Ticket médio" value={salesCount > 0 ? formatCents(Math.round(revenueCents / salesCount)) : "—"} />
         </div>
         <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />O resultado líquido depende de todos os lançamentos (taxas, comissões, despesas e tributos) estarem registrados.
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />Resultado líquido gerencial = entradas operacionais menos saídas operacionais (taxas, despesas, comissões). Transferências entre contas e aportes/retiradas de sócios não entram no cálculo, e o custo do aparelho vendido já está no lucro bruto — não é descontado de novo.
         </p>
       </section>
 
@@ -154,8 +176,9 @@ function Dashboard() {
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {perms.viewCosts && <Kpi label="Capital em estoque" value={data?.capital != null ? formatCents(data.capital) : "…"} highlight />}
           <Kpi label="Aparelhos disponíveis" value={String(data?.available ?? "…")} />
-          {perms.viewFinance && <Kpi label="Saldo disponível" value={formatCents(0)} note="Financeiro em desenvolvimento" />}
-          {perms.viewFinance && <Kpi label="A receber / a pagar" value={`${formatCents(0)} / ${formatCents(0)}`} note="Financeiro em desenvolvimento" />}
+          {perms.viewFinance && <Kpi label="Saldo disponível" value={fin ? formatCents(fin.saldo) : "…"} />}
+          {perms.viewFinance && <Kpi label="A receber / a pagar" value={fin ? `${formatCents(fin.aReceber)} / ${formatCents(fin.aPagar)}` : "…"} />}
+          {perms.viewFinance && <Kpi label="Crediário em atraso" value={fin ? formatCents(fin.credAtraso) : "…"} />}
         </div>
       </section>
 
