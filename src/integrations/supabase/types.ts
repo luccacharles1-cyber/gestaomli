@@ -679,6 +679,7 @@ export type Database = {
       }
       is_store_member: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      safe_uuid: { Args: { _t: string }; Returns: string }
     }
     Enums: {
       app_role: "admin"
