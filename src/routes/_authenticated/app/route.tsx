@@ -13,6 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { NotificationsBell } from "@/components/app/NotificationsBell";
+import { accessBlocked, BILLING_LABEL } from "@/lib/platform";
+import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -116,6 +119,11 @@ function Shell({ ctx }: { ctx: StoreCtx }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   useEffect(() => setOpen(false), [path]);
+  const { data: sub } = useQuery({
+    queryKey: ["store-access", ctx.store.id],
+    queryFn: async () => (await supabase.from("store_subscriptions").select("access_status, billing_status, access_until, access_reason").eq("store_id", ctx.store.id).maybeSingle()).data,
+  });
+  const blocked = accessBlocked(sub);
 
   return (
     <div className="min-h-screen bg-background">
@@ -137,9 +145,20 @@ function Shell({ ctx }: { ctx: StoreCtx }) {
             <p className="truncate font-display text-sm font-semibold">{ctx.store.name}</p>
             <p className="truncate text-xs text-muted-foreground">{ROLE_LABEL[ctx.member.role]} · {ctx.email}</p>
           </div>
+          {ctx.member.role === "owner" && <NotificationsBell storeId={ctx.store.id} userId={ctx.userId} />}
         </header>
         <main className="px-4 pb-24 pt-6 lg:px-8 lg:pb-10">
-          <Outlet />
+          {blocked ? (
+            <div className="mx-auto max-w-lg rounded-xl border bg-card p-6">
+              <h1 className="text-lg font-semibold">Acesso da loja suspenso</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {sub?.access_status === "suspended" ? "O acesso a esta loja foi suspenso pela administração da plataforma." : `O período de ${BILLING_LABEL[sub?.billing_status ?? ""]?.toLowerCase()} terminou em ${formatDate(sub?.access_until)}.`}
+                {" "}Seus dados continuam guardados e voltam a ficar disponíveis após a regularização.
+              </p>
+              <p className="mt-3 text-sm">Situação da cobrança: {BILLING_LABEL[sub?.billing_status ?? "none"]}</p>
+              <p className="mt-3 text-sm text-muted-foreground">Pagamento online: integração pendente. Para regularizar, fale com o suporte da plataforma.</p>
+            </div>
+          ) : <Outlet />}
         </main>
       </div>
       <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t bg-background lg:hidden">
@@ -205,7 +224,7 @@ function SidebarContent({ ctx, path }: { ctx: StoreCtx; path: string }) {
           );
         })}
         {ctx.isPlatformAdmin && (
-          <Link to="/app/admin" className={cn("mt-4 flex items-center gap-3 rounded-md px-3 py-2 text-sm", path.startsWith("/app/admin") ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/60")}>
+          <Link to="/admin" className="mt-4 flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent/60">
             <Shield className="h-4 w-4 text-sidebar-primary" />Administração
           </Link>
         )}
