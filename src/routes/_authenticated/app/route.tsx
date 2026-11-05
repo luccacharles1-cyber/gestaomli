@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
-  Home, Boxes, ShoppingCart, Users, ClipboardCheck, Wallet, BarChart3, FileText, Truck, Settings, LogOut, Menu, Shield, Loader2,
+  Home, Boxes, ShoppingCart, Users, ClipboardCheck, Wallet, BarChart3, FileText, Truck, Settings, LogOut, Menu, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreContext, permsFor, ROLE_LABEL, type StoreCtx } from "@/lib/store-context";
