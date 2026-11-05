@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/app/vendas/nova")({
-  validateSearch: (s: Record<string, unknown>) => ({ device: typeof s.device === "string" ? s.device : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ device: typeof s["device"] === "string" ? s["device"] : undefined }),
   head: () => ({ meta: [{ title: "Nova venda — MLI Gestão" }, { name: "description", content: "Registrar venda com troca e pagamentos combinados." }, { property: "og:title", content: "Nova venda — MLI Gestão" }, { property: "og:description", content: "Registrar venda com troca e pagamentos combinados." }] }),
   component: NovaVenda,
 });
@@ -130,9 +130,9 @@ function NovaVenda() {
       const battery = trade.battery_health ? Number(trade.battery_health) : null;
       const { data: saleId, error } = await supabase.rpc("complete_sale", {
         _store_id: store.id,
-        _client_id: finalClientId,
+        _client_id: finalClientId as string,
         _items: items.map((i) => ({ device_id: i.device.id, price: centsToDecimal(i.priceCents) })),
-        _discount: centsToDecimal(totals.discountCents),
+        _discount: totals.discountCents / 100,
         _payments: payments
           .filter((p) => (parseBRLToCents(p.amount) ?? 0) > 0)
           .map((p) => ({
@@ -155,7 +155,7 @@ function NovaVenda() {
               agreed_value: centsToDecimal(parseBRLToCents(trade.value)!),
             }
           : null,
-        _notes: notes.trim() || null,
+        _notes: (notes.trim() || null) as string,
         _client_token: clientToken,
       });
       if (error) throw error;
