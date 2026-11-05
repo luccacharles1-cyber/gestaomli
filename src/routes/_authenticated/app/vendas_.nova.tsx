@@ -58,7 +58,6 @@ function NovaVenda() {
     setEvaluationId(id);
     setTrade((t) => ({ ...t, model: e.model, storage: e.storage, value: centsToInput(toCents(e.offered_value)) }));
   }
-  const clientEvaluations = (data?.evaluations ?? []).filter((e) => clientId && e.client_id === clientId);
 
   const [payments, setPayments] = useState<Payment[]>([{ method: "pix", amount: "", installments: "" }]);
 
@@ -76,6 +75,7 @@ function NovaVenda() {
       return { clients: (c.data ?? []) as Client[], devices: (d.data ?? []) as Device[], evaluations: ev.data ?? [] };
     },
   });
+  const clientEvaluations = (data?.evaluations ?? []).filter((e) => clientId && e.client_id === clientId);
 
   // Preselect device coming from the stock page (?device=<id>)
   const [preselected, setPreselected] = useState(false);
