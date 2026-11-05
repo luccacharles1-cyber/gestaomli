@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus, Search, Smartphone, ImageOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
-import { STATUS_LABEL, STATUS_ORDER, STORAGE_OPTIONS, daysInStock, type DeviceStatus } from "@/lib/devices";
+import { STATUS_LABEL, STATUS_ORDER, STATUS_VARIANT, STORAGE_OPTIONS, daysInStock } from "@/lib/devices";
 import { formatBRL } from "@/lib/money";
 import { signedUrls } from "@/lib/storage";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -21,15 +21,6 @@ export const Route = createFileRoute("/_authenticated/app/estoque/")({
   component: Estoque,
 });
 
-export const STATUS_VARIANT: Record<DeviceStatus, string> = {
-  em_transito: "bg-muted text-muted-foreground",
-  em_conferencia: "bg-warning/20 text-warning-foreground",
-  disponivel: "bg-success/15 text-success",
-  reservado: "bg-gold-soft text-gold-foreground",
-  em_assistencia: "bg-destructive/10 text-destructive",
-  vendido: "bg-primary text-primary-foreground",
-  devolvido_fornecedor: "bg-muted text-muted-foreground",
-};
 
 function Estoque() {
   const { store, perms } = useStore();

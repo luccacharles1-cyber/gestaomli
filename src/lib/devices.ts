@@ -77,3 +77,13 @@ export function commercialDescription(
   if (includePrice && d.sale_price != null) parts.push(formatPrice(d.sale_price));
   return parts.join(" • ");
 }
+
+export const STATUS_VARIANT: Record<DeviceStatus, string> = {
+  em_transito: "bg-muted text-muted-foreground",
+  em_conferencia: "bg-warning/20 text-warning-foreground",
+  disponivel: "bg-success/15 text-success",
+  reservado: "bg-gold-soft text-gold-foreground",
+  em_assistencia: "bg-destructive/10 text-destructive",
+  vendido: "bg-primary text-primary-foreground",
+  devolvido_fornecedor: "bg-muted text-muted-foreground",
+};
