@@ -51,18 +51,29 @@ function NovaVenda() {
     condition: "seminovo", conservation: "", battery_health: "", defects: "", value: "",
   });
 
+  const [evaluationId, setEvaluationId] = useState("");
+  function pickEvaluation(id: string) {
+    const e = data?.evaluations.find((x) => x.id === id);
+    if (!e) return;
+    setEvaluationId(id);
+    setTrade((t) => ({ ...t, model: e.model, storage: e.storage, value: centsToInput(toCents(e.offered_value)) }));
+    if (e.client_id && !clientId) setClientId(e.client_id);
+  }
+
   const [payments, setPayments] = useState<Payment[]>([{ method: "pix", amount: "", installments: "" }]);
 
   const { data } = useQuery({
     queryKey: ["sale-form-data", store.id],
     queryFn: async () => {
-      const [c, d] = await Promise.all([
+      const [c, d, ev] = await Promise.all([
         supabase.from("clients").select("id, name, whatsapp").eq("store_id", store.id).order("name"),
         supabase.from("devices").select("*").eq("store_id", store.id).in("status", ["disponivel", "reservado"]).order("model"),
+        supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).eq("status", "aprovada").order("created_at", { ascending: false }),
       ]);
+      if (ev.error) throw ev.error;
       if (c.error) throw c.error;
       if (d.error) throw d.error;
-      return { clients: (c.data ?? []) as Client[], devices: (d.data ?? []) as Device[] };
+      return { clients: (c.data ?? []) as Client[], devices: (d.data ?? []) as Device[], evaluations: ev.data ?? [] };
     },
   });
 
@@ -110,6 +121,7 @@ function NovaVenda() {
       const imei2 = normalizeImei(trade.imei2);
       const imeiErr = validateImeiPair(imei1, imei2);
       if (imeiErr) { toast.error(imeiErr); return; }
+      if (!evaluationId) { toast.error("Selecione uma avaliação aprovada para o usado."); return; }
       if (!trade.model.trim()) { toast.error("Informe o modelo do usado."); return; }
       if ((parseBRLToCents(trade.value) ?? 0) <= 0) { toast.error("Informe o valor acordado do usado."); return; }
       if (!finalClientId && !newClient.name.trim()) { toast.error("Venda com usado na troca exige cliente identificado."); return; }
@@ -128,7 +140,8 @@ function NovaVenda() {
       }
 
       const battery = trade.battery_health ? Number(trade.battery_health) : null;
-      const { data: saleId, error } = await supabase.rpc("complete_sale", {
+      const { data: saleId, error } = await supabase.rpc("complete_sale_evaluated", {
+        _evaluation_id: (hasTradeIn ? evaluationId : null) as string,
         _store_id: store.id,
         _client_id: finalClientId as string,
         _items: items.map((i) => ({ device_id: i.device.id, price: centsToDecimal(i.priceCents) })),
@@ -251,6 +264,12 @@ function NovaVenda() {
           </label>
           {hasTradeIn && (
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2"><Label>Avaliação aprovada *</Label>
+                <Select value={evaluationId} onValueChange={pickEvaluation}>
+                  <SelectTrigger><SelectValue placeholder={data?.evaluations.length ? "Escolha a avaliação" : "Nenhuma avaliação aprovada — avalie em Avaliação de usados"} /></SelectTrigger>
+                  <SelectContent>{(data?.evaluations ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.model} {e.storage} — {formatCents(toCents(e.offered_value))}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5"><Label>Modelo *</Label><Input value={trade.model} onChange={(e) => setTrade({ ...trade, model: e.target.value })} placeholder="iPhone 11" /></div>
               <div className="space-y-1.5"><Label>Armazenamento</Label>
                 <Select value={trade.storage} onValueChange={(v) => setTrade({ ...trade, storage: v })}>
@@ -259,7 +278,7 @@ function NovaVenda() {
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cor</Label><Input value={trade.color} onChange={(e) => setTrade({ ...trade, color: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Valor acordado (R$) *</Label><Input inputMode="decimal" value={trade.value} onChange={(e) => setTrade({ ...trade, value: e.target.value })} placeholder="1.500,00" /></div>
+              <div className="space-y-1.5"><Label>Valor acordado (R$) *</Label><Input inputMode="decimal" value={trade.value} readOnly placeholder="Vem da avaliação" /></div>
               <div className="space-y-1.5"><Label>IMEI 1</Label><Input inputMode="numeric" maxLength={15} value={trade.imei1} onChange={(e) => setTrade({ ...trade, imei1: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>IMEI 2</Label><Input inputMode="numeric" maxLength={15} value={trade.imei2} onChange={(e) => setTrade({ ...trade, imei2: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Número de série</Label><Input value={trade.serial_number} onChange={(e) => setTrade({ ...trade, serial_number: e.target.value })} /></div>
