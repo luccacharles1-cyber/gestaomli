@@ -11,7 +11,7 @@ import {
   accountBalanceCents, installmentStatus, type CreditContract, type CreditInstallment, type FinancialAccount, type FinancialCategory, type FinancialEntry,
 } from "@/lib/finance";
 import { PAYMENT_LABEL } from "@/lib/sales";
-import { formatBRL, formatCents, parseBRL, toCents } from "@/lib/money";
+import { formatBRL, formatCents, parseBRLToCents, toCents } from "@/lib/money";
 import { formatDate, todayISO } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ function Financeiro() {
   if (error || !data) return <p className="text-destructive">Erro ao carregar o financeiro.</p>;
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader title="Financeiro" description="Contas, lançamentos, recebíveis e crediário próprio." />
+      <PageHeader title="Financeiro" subtitle="Contas, lançamentos, recebíveis e crediário próprio." />
       <Tabs defaultValue="visao">
         <TabsList className="flex-wrap">
           <TabsTrigger value="visao">Visão geral</TabsTrigger>
@@ -234,7 +234,7 @@ function EntryDialog({ open, onClose, accounts, categories, onSaved }: { open: b
   async function save(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
-    const cents = parseBRL(amount);
+    const cents = parseBRLToCents(amount) ?? 0;
     if (cents <= 0) { toast.error("Informe um valor válido."); return; }
     if (paidNow && !accountId) { toast.error("Escolha a conta."); return; }
     setBusy(true);
@@ -300,7 +300,7 @@ function TransferDialog({ open, onClose, accounts, onSaved }: { open: boolean; o
   async function save(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
-    const cents = parseBRL(amount);
+    const cents = parseBRLToCents(amount) ?? 0;
     if (cents <= 0 || !from || !to || from === to) { toast.error("Informe valor e contas diferentes."); return; }
     setBusy(true);
     const group = crypto.randomUUID();
@@ -344,7 +344,7 @@ function BaixaDialog({ entry, onClose, accounts, onSaved }: { entry: EntryRow | 
   async function save(e: FormEvent) {
     e.preventDefault();
     if (!entry || busy) return;
-    const cents = parseBRL(amount);
+    const cents = parseBRLToCents(amount) ?? 0;
     if (cents <= 0 || cents > remaining) { toast.error(`Valor deve ser entre 0,01 e ${formatCents(remaining)}.`); return; }
     const acc = accountId || entry.account_id;
     if (!acc) { toast.error("Escolha a conta de destino."); return; }
@@ -482,7 +482,7 @@ function ContractDialog({ contract, installments, accounts, canReceive, onClose,
   async function receive(e: FormEvent) {
     e.preventDefault();
     if (!contract || busy) return;
-    const cents = parseBRL(amount);
+    const cents = parseBRLToCents(amount) ?? 0;
     if (cents <= 0 || !accountId) { toast.error("Informe valor e conta de destino."); return; }
     setBusy(true);
     const { error } = await supabase.rpc("receive_installments", {
@@ -571,7 +571,7 @@ function Contas({ data }: { data: NonNullable<ReturnType<typeof useFinanceData>[
     e.preventDefault();
     if (busy) return;
     setBusy(true);
-    const { error } = await supabase.from("financial_accounts").insert({ store_id: store.id, name: name.trim(), type, initial_balance: parseBRL(initial) / 100, initial_balance_date: initialDate });
+    const { error } = await supabase.from("financial_accounts").insert({ store_id: store.id, name: name.trim(), type, initial_balance: parseBRLToCents(initial) ?? 0 / 100, initial_balance_date: initialDate });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Conta criada."); setName(""); setInitial("");

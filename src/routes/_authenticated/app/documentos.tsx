@@ -56,7 +56,7 @@ function Documentos() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <PageHeader title="Documentos e contratos" description="Contratos vinculados às vendas, com emissão, assinatura externa e arquivo assinado preservado." />
+      <PageHeader title="Documentos e contratos" subtitle="Contratos vinculados às vendas, com emissão, assinatura externa e arquivo assinado preservado." />
 
       <section className="grid gap-3 sm:grid-cols-2">
         {Object.entries(CONTRACT_TYPE_LABEL).map(([type, label]) => {

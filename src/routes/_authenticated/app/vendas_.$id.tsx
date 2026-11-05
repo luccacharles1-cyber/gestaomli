@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { PAYMENT_LABEL, SALE_STATUS_LABEL } from "@/lib/sales";
 import { ENTRY_STATUS_LABEL, INSTALLMENT_STATUS_LABEL, buildSchedule, installmentStatus, type CreditContract, type CreditInstallment, type FinancialAccount, type FinancialEntry } from "@/lib/finance";
-import { formatBRL, formatCents, parseBRL, toCents } from "@/lib/money";
+import { formatBRL, formatCents, parseBRLToCents, toCents } from "@/lib/money";
 import { formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -397,7 +397,7 @@ function ReceiptDialog({ open, onClose, saleId, balanceCents, accounts, onSaved 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    const cents = parseBRL(amount);
+    const cents = parseBRLToCents(amount) ?? 0;
     if (cents <= 0) { toast.error("Informe um valor válido."); return; }
     if (cents > balanceCents) { toast.error(`O valor excede o saldo devedor de ${formatCents(balanceCents)}. Troco ou crédito exigem tratamento explícito.`); return; }
     if (!accountId) { toast.error("Escolha a conta de destino."); return; }
@@ -490,7 +490,7 @@ function RefundDialog({ open, onClose, saleId, pendingCents, accounts, onSaved }
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    const cents = parseBRL(amount);
+    const cents = parseBRLToCents(amount) ?? 0;
     if (cents <= 0 || cents > pendingCents) { toast.error(`Valor deve ser entre 0,01 e ${formatCents(pendingCents)}.`); return; }
     if (!accountId) { toast.error("Escolha a conta de origem."); return; }
     setBusy(true);
