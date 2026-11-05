@@ -14,16 +14,684 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accessories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          quantity: number
+          sale_price: number | null
+          sku: string | null
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          quantity?: number
+          sale_price?: number | null
+          sku?: string | null
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number
+          sale_price?: number | null
+          sku?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accessories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accessory_costs: {
+        Row: {
+          accessory_id: string
+          store_id: string
+          unit_cost: number
+        }
+        Insert: {
+          accessory_id: string
+          store_id: string
+          unit_cost?: number
+        }
+        Update: {
+          accessory_id?: string
+          store_id?: string
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accessory_costs_accessory_id_fkey"
+            columns: ["accessory_id"]
+            isOneToOne: true
+            referencedRelation: "accessories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accessory_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          store_id: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          store_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_costs: {
+        Row: {
+          device_id: string
+          freight_cost: number
+          other_costs: number
+          purchase_cost: number
+          store_id: string
+          total_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          device_id: string
+          freight_cost?: number
+          other_costs?: number
+          purchase_cost?: number
+          store_id: string
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          device_id?: string
+          freight_cost?: number
+          other_costs?: number
+          purchase_cost?: number
+          store_id?: string
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_costs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: true
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_imeis: {
+        Row: {
+          device_id: string
+          imei: string
+          store_id: string
+        }
+        Insert: {
+          device_id: string
+          imei: string
+          store_id: string
+        }
+        Update: {
+          device_id?: string
+          imei?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_imeis_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_imeis_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_movements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          device_id: string
+          from_status: Database["public"]["Enums"]["device_status"] | null
+          id: string
+          note: string | null
+          store_id: string
+          to_status: Database["public"]["Enums"]["device_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          device_id: string
+          from_status?: Database["public"]["Enums"]["device_status"] | null
+          id?: string
+          note?: string | null
+          store_id: string
+          to_status: Database["public"]["Enums"]["device_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          device_id?: string
+          from_status?: Database["public"]["Enums"]["device_status"] | null
+          id?: string
+          note?: string | null
+          store_id?: string
+          to_status?: Database["public"]["Enums"]["device_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_movements_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_movements_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_photos: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          path: string
+          position: number
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          path: string
+          position?: number
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          path?: string
+          position?: number
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_photos_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_photos_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          acquired_at: string | null
+          battery_health: number | null
+          brand: string
+          category: string
+          color: string | null
+          condition: Database["public"]["Enums"]["device_condition"]
+          conservation: string | null
+          created_at: string
+          created_by: string | null
+          defects: string | null
+          id: string
+          imei1: string | null
+          imei2: string | null
+          internal_code: string | null
+          location: string | null
+          min_price: number | null
+          model: string
+          notes: string | null
+          origin_name: string | null
+          replaced_parts: string | null
+          sale_price: number | null
+          serial_number: string | null
+          status: Database["public"]["Enums"]["device_status"]
+          storage: string | null
+          store_id: string
+          test_checklist: Json
+          updated_at: string
+        }
+        Insert: {
+          acquired_at?: string | null
+          battery_health?: number | null
+          brand?: string
+          category?: string
+          color?: string | null
+          condition?: Database["public"]["Enums"]["device_condition"]
+          conservation?: string | null
+          created_at?: string
+          created_by?: string | null
+          defects?: string | null
+          id?: string
+          imei1?: string | null
+          imei2?: string | null
+          internal_code?: string | null
+          location?: string | null
+          min_price?: number | null
+          model: string
+          notes?: string | null
+          origin_name?: string | null
+          replaced_parts?: string | null
+          sale_price?: number | null
+          serial_number?: string | null
+          status?: Database["public"]["Enums"]["device_status"]
+          storage?: string | null
+          store_id: string
+          test_checklist?: Json
+          updated_at?: string
+        }
+        Update: {
+          acquired_at?: string | null
+          battery_health?: number | null
+          brand?: string
+          category?: string
+          color?: string | null
+          condition?: Database["public"]["Enums"]["device_condition"]
+          conservation?: string | null
+          created_at?: string
+          created_by?: string | null
+          defects?: string | null
+          id?: string
+          imei1?: string | null
+          imei2?: string | null
+          internal_code?: string | null
+          location?: string | null
+          min_price?: number | null
+          model?: string
+          notes?: string | null
+          origin_name?: string | null
+          replaced_parts?: string | null
+          sale_price?: number | null
+          serial_number?: string | null
+          status?: Database["public"]["Enums"]["device_status"]
+          storage?: string | null
+          store_id?: string
+          test_checklist?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      highlights: {
+        Row: {
+          active: boolean
+          body: string | null
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          id: string
+          image_url: string | null
+          position: number
+          sponsored: boolean
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          body?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          id?: string
+          image_url?: string | null
+          position?: number
+          sponsored?: boolean
+          title: string
+        }
+        Update: {
+          active?: boolean
+          body?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          id?: string
+          image_url?: string | null
+          position?: number
+          sponsored?: boolean
+          title?: string
+        }
+        Relationships: []
+      }
+      product_grants: {
+        Row: {
+          created_at: string
+          email: string
+          granted_by: string | null
+          id: string
+          note: string | null
+          product: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          product?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          product?: string
+        }
+        Relationships: []
+      }
+      store_invites: {
+        Row: {
+          accepted_at: string | null
+          can_approve_evaluations: boolean
+          can_give_discounts: boolean
+          can_manage_inventory: boolean
+          can_manage_team: boolean
+          can_view_costs: boolean
+          can_view_finance: boolean
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["store_role"]
+          store_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          can_approve_evaluations?: boolean
+          can_give_discounts?: boolean
+          can_manage_inventory?: boolean
+          can_manage_team?: boolean
+          can_view_costs?: boolean
+          can_view_finance?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["store_role"]
+          store_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          can_approve_evaluations?: boolean
+          can_give_discounts?: boolean
+          can_manage_inventory?: boolean
+          can_manage_team?: boolean
+          can_view_costs?: boolean
+          can_view_finance?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["store_role"]
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_invites_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_members: {
+        Row: {
+          can_approve_evaluations: boolean
+          can_give_discounts: boolean
+          can_manage_inventory: boolean
+          can_manage_team: boolean
+          can_view_costs: boolean
+          can_view_finance: boolean
+          created_at: string
+          email: string | null
+          id: string
+          role: Database["public"]["Enums"]["store_role"]
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          can_approve_evaluations?: boolean
+          can_give_discounts?: boolean
+          can_manage_inventory?: boolean
+          can_manage_team?: boolean
+          can_view_costs?: boolean
+          can_view_finance?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["store_role"]
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          can_approve_evaluations?: boolean
+          can_give_discounts?: boolean
+          can_manage_inventory?: boolean
+          can_manage_team?: boolean
+          can_view_costs?: boolean
+          can_view_finance?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["store_role"]
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_members_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_subscriptions: {
+        Row: {
+          plan: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          plan?: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          plan?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_subscriptions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string
+          document: string | null
+          email: string | null
+          id: string
+          legal_name: string | null
+          logo_path: string | null
+          name: string
+          phone: string | null
+          receipt_seq: number
+          updated_at: string
+          warranty_text: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by: string
+          document?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_path?: string | null
+          name: string
+          phone?: string | null
+          receipt_seq?: number
+          updated_at?: string
+          warranty_text?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          document?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string | null
+          logo_path?: string | null
+          name?: string
+          phone?: string | null
+          receipt_seq?: number
+          updated_at?: string
+          warranty_text?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_my_invites: { Args: never; Returns: number }
+      create_store: { Args: { _name: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_store_permission: {
+        Args: { _perm: string; _store_id: string }
+        Returns: boolean
+      }
+      is_store_member: { Args: { _store_id: string }; Returns: boolean }
+      is_store_owner: { Args: { _store_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
+      device_condition: "novo" | "seminovo"
+      device_status:
+        | "em_transito"
+        | "em_conferencia"
+        | "disponivel"
+        | "reservado"
+        | "em_assistencia"
+        | "vendido"
+        | "devolvido_fornecedor"
+      store_role: "owner" | "manager" | "seller"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +818,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+      device_condition: ["novo", "seminovo"],
+      device_status: [
+        "em_transito",
+        "em_conferencia",
+        "disponivel",
+        "reservado",
+        "em_assistencia",
+        "vendido",
+        "devolvido_fornecedor",
+      ],
+      store_role: ["owner", "manager", "seller"],
+    },
   },
 } as const
