@@ -248,7 +248,7 @@ function Team() {
               <SelectContent>{isOwner && <SelectItem value="owner">Sócio (proprietário)</SelectItem>}<SelectItem value="manager">Gerente</SelectItem><SelectItem value="seller">Vendedor</SelectItem></SelectContent>
             </Select>
           </div>
-          {role === "owner" ? <p className="text-sm text-muted-foreground">Sócio tem acesso completo à loja, com login próprio. Ele entra ao criar conta e confirmar este e-mail.</p> : <div className="grid gap-2 sm:grid-cols-2">
+          {role === "owner" ? <p className="text-sm text-muted-foreground">Sócio tem acesso completo à loja, com login próprio. Ele entra ao aceitar o convite com o e-mail convidado. Ser sócio não dá acesso à administração da plataforma.</p> : <div className="grid gap-2 sm:grid-cols-2">
             {PERMS.map(([k, l]) => (
               <label key={k} className="flex items-center gap-2 text-sm"><Checkbox checked={newPerms[k]} onCheckedChange={(v) => setNewPerms({ ...newPerms, [k]: v === true })} />{l}</label>
             ))}
