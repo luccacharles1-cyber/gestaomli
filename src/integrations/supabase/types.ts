@@ -123,6 +123,56 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          document: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          origin: string | null
+          store_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          origin?: string | null
+          store_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          document?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          origin?: string | null
+          store_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       device_costs: {
         Row: {
           device_id: string
@@ -455,13 +505,290 @@ export type Database = {
         }
         Relationships: []
       }
+      sale_events: {
+        Row: {
+          actor: string | null
+          created_at: string
+          detail: Json
+          event: string
+          id: string
+          sale_id: string
+          store_id: string
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string
+          detail?: Json
+          event: string
+          id?: string
+          sale_id: string
+          store_id: string
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string
+          detail?: Json
+          event?: string
+          id?: string
+          sale_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_events_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_items: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          price: number
+          sale_id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          price: number
+          sale_id: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          price?: number
+          sale_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          fee: number
+          id: string
+          installments: number | null
+          method: Database["public"]["Enums"]["payment_method"]
+          sale_id: string
+          store_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          fee?: number
+          id?: string
+          installments?: number | null
+          method: Database["public"]["Enums"]["payment_method"]
+          sale_id: string
+          store_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          fee?: number
+          id?: string
+          installments?: number | null
+          method?: Database["public"]["Enums"]["payment_method"]
+          sale_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_payments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_payments_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_trade_ins: {
+        Row: {
+          agreed_value: number
+          created_at: string
+          device_id: string
+          id: string
+          sale_id: string
+          store_id: string
+        }
+        Insert: {
+          agreed_value: number
+          created_at?: string
+          device_id: string
+          id?: string
+          sale_id: string
+          store_id: string
+        }
+        Update: {
+          agreed_value?: number
+          created_at?: string
+          device_id?: string
+          id?: string
+          sale_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_trade_ins_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_trade_ins_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_trade_ins_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          amount_received: number
+          balance: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          client_id: string | null
+          client_token: string | null
+          created_at: string
+          created_by: string | null
+          discount: number
+          id: string
+          items_total: number
+          notes: string | null
+          receipt_number: number | null
+          receipt_snapshot: Json | null
+          seller_id: string | null
+          status: Database["public"]["Enums"]["sale_status"]
+          store_id: string
+          total: number
+          trade_in_value: number
+        }
+        Insert: {
+          amount_received?: number
+          balance?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          client_id?: string | null
+          client_token?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          items_total: number
+          notes?: string | null
+          receipt_number?: number | null
+          receipt_snapshot?: Json | null
+          seller_id?: string | null
+          status?: Database["public"]["Enums"]["sale_status"]
+          store_id: string
+          total: number
+          trade_in_value?: number
+        }
+        Update: {
+          amount_received?: number
+          balance?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          client_id?: string | null
+          client_token?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          id?: string
+          items_total?: number
+          notes?: string | null
+          receipt_number?: number | null
+          receipt_snapshot?: Json | null
+          seller_id?: string | null
+          status?: Database["public"]["Enums"]["sale_status"]
+          store_id?: string
+          total?: number
+          trade_in_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_invites: {
         Row: {
           accepted_at: string | null
           can_approve_evaluations: boolean
+          can_cancel_sales: boolean
           can_give_discounts: boolean
           can_manage_inventory: boolean
           can_manage_team: boolean
+          can_register_sales: boolean
           can_view_costs: boolean
           can_view_finance: boolean
           created_at: string
@@ -474,9 +801,11 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           can_approve_evaluations?: boolean
+          can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
           can_manage_team?: boolean
+          can_register_sales?: boolean
           can_view_costs?: boolean
           can_view_finance?: boolean
           created_at?: string
@@ -489,9 +818,11 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           can_approve_evaluations?: boolean
+          can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
           can_manage_team?: boolean
+          can_register_sales?: boolean
           can_view_costs?: boolean
           can_view_finance?: boolean
           created_at?: string
@@ -514,9 +845,11 @@ export type Database = {
       store_members: {
         Row: {
           can_approve_evaluations: boolean
+          can_cancel_sales: boolean
           can_give_discounts: boolean
           can_manage_inventory: boolean
           can_manage_team: boolean
+          can_register_sales: boolean
           can_view_costs: boolean
           can_view_finance: boolean
           created_at: string
@@ -528,9 +861,11 @@ export type Database = {
         }
         Insert: {
           can_approve_evaluations?: boolean
+          can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
           can_manage_team?: boolean
+          can_register_sales?: boolean
           can_view_costs?: boolean
           can_view_finance?: boolean
           created_at?: string
@@ -542,9 +877,11 @@ export type Database = {
         }
         Update: {
           can_approve_evaluations?: boolean
+          can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
           can_manage_team?: boolean
+          can_register_sales?: boolean
           can_view_costs?: boolean
           can_view_finance?: boolean
           created_at?: string
@@ -665,6 +1002,23 @@ export type Database = {
     }
     Functions: {
       accept_my_invites: { Args: never; Returns: number }
+      cancel_sale: {
+        Args: { _reason: string; _sale_id: string }
+        Returns: undefined
+      }
+      complete_sale: {
+        Args: {
+          _client_id: string
+          _client_token: string
+          _discount: number
+          _items: Json
+          _notes: string
+          _payments: Json
+          _store_id: string
+          _trade_in: Json
+        }
+        Returns: string
+      }
       create_store: { Args: { _name: string }; Returns: string }
       has_role: {
         Args: {
@@ -692,6 +1046,15 @@ export type Database = {
         | "em_assistencia"
         | "vendido"
         | "devolvido_fornecedor"
+        | "devolvido_cliente"
+      payment_method:
+        | "pix"
+        | "dinheiro"
+        | "cartao_credito"
+        | "cartao_debito"
+        | "crediario"
+        | "outro"
+      sale_status: "concluida" | "cancelada"
       store_role: "owner" | "manager" | "seller"
     }
     CompositeTypes: {
@@ -830,7 +1193,17 @@ export const Constants = {
         "em_assistencia",
         "vendido",
         "devolvido_fornecedor",
+        "devolvido_cliente",
       ],
+      payment_method: [
+        "pix",
+        "dinheiro",
+        "cartao_credito",
+        "cartao_debito",
+        "crediario",
+        "outro",
+      ],
+      sale_status: ["concluida", "cancelada"],
       store_role: ["owner", "manager", "seller"],
     },
   },
