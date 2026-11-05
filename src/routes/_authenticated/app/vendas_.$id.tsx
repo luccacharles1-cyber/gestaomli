@@ -6,7 +6,7 @@ import { ArrowLeft, Ban, HandCoins, Loader2, Printer, Undo2 } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { PAYMENT_LABEL, SALE_STATUS_LABEL } from "@/lib/sales";
-import { INSTALLMENT_STATUS_LABEL, installmentStatus, type CreditContract, type CreditInstallment, type FinancialAccount, type FinancialEntry } from "@/lib/finance";
+import { ENTRY_STATUS_LABEL, INSTALLMENT_STATUS_LABEL, buildSchedule, installmentStatus, type CreditContract, type CreditInstallment, type FinancialAccount, type FinancialEntry } from "@/lib/finance";
 import { formatBRL, formatCents, parseBRL, toCents } from "@/lib/money";
 import { formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,17 @@ function VendaPage() {
   const s = data.sale;
   const snap = (s.receipt_snapshot ?? {}) as Snapshot;
   const balance = Number(s.balance);
+  const hasCrediario = data.payments.some((p) => p.method === "crediario");
+  const refundedCents = data.entries.filter((e) => e.kind === "saida" && e.is_refund && e.status === "pago").reduce((a, e) => a + toCents(e.amount), 0);
+  const refundPendingCents = toCents(s.refund_due) - refundedCents;
+  const [reverseEntry, setReverseEntry] = [null as FinancialEntry | null, (_: FinancialEntry | null) => {}] as const;
+  void reverseEntry; void setReverseEntry;
+
+  function refresh() {
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["sales"] });
+    qc.invalidateQueries({ queryKey: ["finance"] });
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -100,6 +111,9 @@ function VendaPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className={s.status === "cancelada" ? "bg-destructive/10 text-destructive" : "bg-success/15 text-success"}>{SALE_STATUS_LABEL[s.status]}</Badge>
           <Button variant="outline" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" />Imprimir recibo</Button>
+          {s.status === "concluida" && balance > 0 && perms.registerPayments && (
+            <Button onClick={() => setReceiptOpen(true)}><HandCoins className="mr-1 h-4 w-4" />Registrar recebimento</Button>
+          )}
           {s.status === "concluida" && perms.cancelSales && (
             <Button variant="destructive" onClick={() => setCancelOpen(true)}><Ban className="mr-1 h-4 w-4" />Cancelar venda</Button>
           )}
