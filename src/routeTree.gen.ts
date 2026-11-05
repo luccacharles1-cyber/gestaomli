@@ -27,6 +27,7 @@ import { Route as AuthenticatedAppVendasRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppEstoqueIndexRouteImport } from './routes/_authenticated/app/estoque/index'
 import { Route as AuthenticatedAppEstoqueIdRouteImport } from './routes/_authenticated/app/estoque/$id'
 import { Route as AuthenticatedAppEstoqueNovoRouteImport } from './routes/_authenticated/app/estoque/novo'
+import { Route as AuthenticatedAppVendasIdRouteImport } from './routes/_authenticated/app/vendas.$id'
 import { Route as AuthenticatedAppVendasNovaRouteImport } from './routes/_authenticated/app/vendas.nova'
 
 const IndexRoute = IndexRouteImport.update({
@@ -128,6 +129,12 @@ const AuthenticatedAppEstoqueNovoRoute =
     path: '/estoque/novo',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppVendasIdRoute =
+  AuthenticatedAppVendasIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedAppVendasRoute,
+  } as any)
 const AuthenticatedAppVendasNovaRoute =
   AuthenticatedAppVendasNovaRouteImport.update({
     id: '/nova',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
+  '/app/vendas/$id': typeof AuthenticatedAppVendasIdRoute
   '/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
   '/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
 }
@@ -171,6 +179,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
+  '/app/vendas/$id': typeof AuthenticatedAppVendasIdRoute
   '/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
   '/app/estoque': typeof AuthenticatedAppEstoqueIndexRoute
 }
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/estoque/$id': typeof AuthenticatedAppEstoqueIdRoute
   '/_authenticated/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
+  '/_authenticated/app/vendas/$id': typeof AuthenticatedAppVendasIdRoute
   '/_authenticated/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
   '/_authenticated/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
 }
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/estoque/$id'
     | '/app/estoque/novo'
+    | '/app/vendas/$id'
     | '/app/vendas/nova'
     | '/app/estoque/'
   fileRoutesByTo: FileRoutesByTo
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/estoque/$id'
     | '/app/estoque/novo'
+    | '/app/vendas/$id'
     | '/app/vendas/nova'
     | '/app/estoque'
   id:
@@ -255,6 +267,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/'
     | '/_authenticated/app/estoque/$id'
     | '/_authenticated/app/estoque/novo'
+    | '/_authenticated/app/vendas/$id'
     | '/_authenticated/app/vendas/nova'
     | '/_authenticated/app/estoque/'
   fileRoutesById: FileRoutesById
@@ -394,6 +407,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppEstoqueNovoRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/vendas/$id': {
+      id: '/_authenticated/app/vendas/$id'
+      path: '/$id'
+      fullPath: '/app/vendas/$id'
+      preLoaderRoute: typeof AuthenticatedAppVendasIdRouteImport
+      parentRoute: typeof AuthenticatedAppVendasRoute
+    }
     '/_authenticated/app/vendas/nova': {
       id: '/_authenticated/app/vendas/nova'
       path: '/nova'
@@ -405,11 +425,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAppVendasRouteChildren {
+  AuthenticatedAppVendasIdRoute: typeof AuthenticatedAppVendasIdRoute
   AuthenticatedAppVendasNovaRoute: typeof AuthenticatedAppVendasNovaRoute
 }
 
 const AuthenticatedAppVendasRouteChildren: AuthenticatedAppVendasRouteChildren =
   {
+    AuthenticatedAppVendasIdRoute: AuthenticatedAppVendasIdRoute,
     AuthenticatedAppVendasNovaRoute: AuthenticatedAppVendasNovaRoute,
   }
 

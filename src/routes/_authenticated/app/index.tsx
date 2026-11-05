@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ShoppingCart, Smartphone, UserPlus, Receipt, CheckCircle2, Circle, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { stockCapitalCents } from "@/lib/devices";
-import { formatCents } from "@/lib/money";
+import { formatCents, toCents } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,19 @@ function Dashboard() {
   const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
 
+  const range = useMemo(() => {
+    const today = todayISO();
+    let f = from, t = to;
+    if (period === "hoje") { f = today; t = today; }
+    else if (period === "7d") { f = new Date(Date.now() - 6 * 86400000).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }); t = today; }
+    else if (period === "mes") { f = `${today.slice(0, 7)}-01`; t = today; }
+    return { gte: `${f}T00:00:00-03:00`, lte: `${t}T23:59:59.999-03:00` };
+  }, [period, from, to]);
+
   const { data } = useQuery({
-    queryKey: ["dashboard", store.id, perms.viewCosts],
+    queryKey: ["dashboard", store.id, perms.viewCosts, range.gte, range.lte],
     queryFn: async () => {
-      const [devices, photos, costs, accessories, accCosts, members, highlights] = await Promise.all([
+      const [devices, photos, costs, accessories, accCosts, members, highlights, sales, soldItems] = await Promise.all([
         supabase.from("devices").select("id, status").eq("store_id", store.id),
         supabase.from("device_photos").select("device_id").eq("store_id", store.id),
         perms.viewCosts ? supabase.from("device_costs").select("device_id, total_cost").eq("store_id", store.id) : Promise.resolve({ data: [] }),
@@ -34,6 +43,10 @@ function Dashboard() {
         perms.viewCosts ? supabase.from("accessory_costs").select("accessory_id, unit_cost").eq("store_id", store.id) : Promise.resolve({ data: [] }),
         supabase.from("store_members").select("id").eq("store_id", store.id),
         supabase.from("highlights").select("*").eq("active", true).order("position"),
+        supabase.from("sales").select("id, total, created_at, clients(name)").eq("store_id", store.id).eq("status", "concluida").gte("created_at", range.gte).lte("created_at", range.lte).order("created_at", { ascending: false }),
+        perms.viewCosts
+          ? supabase.from("sale_items").select("sale_id, device_id, sales!inner(store_id, status, created_at)").eq("sales.store_id", store.id).eq("sales.status", "concluida").gte("sales.created_at", range.gte).lte("sales.created_at", range.lte)
+          : Promise.resolve({ data: [] }),
       ]);
       const costMap = new Map((costs.data ?? []).map((c) => [c.device_id, c.total_cost]));
       const accMap = new Map((accCosts.data ?? []).map((c) => [c.accessory_id, c.unit_cost]));
@@ -53,9 +66,17 @@ function Dashboard() {
         totalDevices: devs.length,
         members: members.data?.length ?? 1,
         highlights: highlights.data ?? [],
+        sales: sales.data ?? [],
+        grossProfit: perms.viewCosts
+          ? (sales.data ?? []).reduce((acc, s) => acc + toCents(s.total), 0) -
+            (soldItems.data ?? []).reduce((acc, i) => acc + toCents(costMap.get(i.device_id) ?? null), 0)
+          : null,
       };
     },
   });
+
+  const revenueCents = (data?.sales ?? []).reduce((acc, s) => acc + toCents(s.total), 0);
+  const salesCount = data?.sales.length ?? 0;
 
   const checklist = [
     { done: !!(store.document && store.phone && store.address), label: "Completar dados da loja", to: "/app/configuracoes" as const },
@@ -96,7 +117,7 @@ function Dashboard() {
       </div>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <QuickAction icon={ShoppingCart} label="Nova venda" disabled />
+        <QuickAction icon={ShoppingCart} label="Nova venda" to="/app/vendas/nova" disabled={!perms.registerSales} />
         <QuickAction icon={Smartphone} label="Cadastrar aparelho" to="/app/estoque/novo" disabled={!perms.manageInventory} />
         <QuickAction icon={UserPlus} label="Novo contato" disabled />
         <QuickAction icon={Receipt} label="Lançar despesa" disabled />
@@ -105,15 +126,15 @@ function Dashboard() {
       <section>
         <div className="mb-3 flex items-center gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Indicadores do período</h2>
-          <Badge variant="outline" className="text-xs">Módulo de vendas em desenvolvimento</Badge>
+          <Badge variant="outline" className="text-xs">Competência por data da venda</Badge>
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Kpi label="Faturamento" value={formatCents(0)} />
-          {perms.viewCosts && <Kpi label="Lucro bruto das vendas" value={formatCents(0)} />}
-          {perms.viewFinance && <Kpi label="Resultado líquido gerencial" value={formatCents(0)} />}
-          {perms.viewCosts && <Kpi label="Margem bruta / líquida" value="— / —" />}
-          <Kpi label="Quantidade de vendas" value="0" />
-          <Kpi label="Ticket médio" value="—" />
+          <Kpi label="Faturamento" value={formatCents(revenueCents)} />
+          {perms.viewCosts && <Kpi label="Lucro bruto das vendas" value={data?.grossProfit != null ? formatCents(data.grossProfit) : "…"} />}
+          {perms.viewFinance && <Kpi label="Resultado líquido gerencial" value={formatCents(0)} note="Financeiro em desenvolvimento" />}
+          {perms.viewCosts && <Kpi label="Margem bruta" value={revenueCents > 0 && data?.grossProfit != null ? `${((data.grossProfit / revenueCents) * 100).toFixed(1).replace(".", ",")}%` : "—"} />}
+          <Kpi label="Quantidade de vendas" value={String(salesCount)} />
+          <Kpi label="Ticket médio" value={salesCount > 0 ? formatCents(Math.round(revenueCents / salesCount)) : "—"} />
         </div>
         <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />O resultado líquido depende de todos os lançamentos (taxas, comissões, despesas e tributos) estarem registrados.
@@ -168,8 +189,21 @@ function Dashboard() {
           ) : !showChecklist && <p className="text-sm text-muted-foreground">Nenhuma pendência no momento.</p>}
         </section>
         <section className="rounded-xl border bg-card p-5">
-          <h2 className="mb-3 font-semibold">Vendas recentes e oportunidades</h2>
-          <p className="text-sm text-muted-foreground">As vendas e o CRM estão em desenvolvimento. Quando forem liberados, os registros aparecem aqui.</p>
+          <h2 className="mb-3 font-semibold">Vendas recentes</h2>
+          {data?.sales.length ? (
+            <ul className="space-y-2">
+              {data.sales.slice(0, 5).map((s) => (
+                <li key={s.id}>
+                  <Link to="/app/vendas/$id" params={{ id: s.id }} className="flex items-center justify-between gap-2 text-sm hover:underline">
+                    <span className="truncate">{s.clients?.name ?? "Cliente não identificado"}</span>
+                    <span className="font-medium">{formatCents(toCents(s.total))}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhuma venda no período. As oportunidades do CRM aparecem aqui quando o módulo for liberado.</p>
+          )}
         </section>
       </div>
     </div>
@@ -186,7 +220,7 @@ function Kpi({ label, value, note, highlight }: { label: string; value: string; 
   );
 }
 
-function QuickAction({ icon: Icon, label, to, disabled }: { icon: typeof Smartphone; label: string; to?: "/app/estoque/novo"; disabled?: boolean }) {
+function QuickAction({ icon: Icon, label, to, disabled }: { icon: typeof Smartphone; label: string; to?: "/app/estoque/novo" | "/app/vendas/nova"; disabled?: boolean }) {
   const inner = (
     <>
       <Icon className={`h-5 w-5 ${disabled ? "" : "text-gold"}`} />
