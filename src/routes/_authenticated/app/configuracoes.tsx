@@ -253,16 +253,32 @@ function Team() {
               <label key={k} className="flex items-center gap-2 text-sm"><Checkbox checked={newPerms[k]} onCheckedChange={(v) => setNewPerms({ ...newPerms, [k]: v === true })} />{l}</label>
             ))}
           </div>}
-          <Button>Registrar convite</Button>
-          <p className="text-xs text-muted-foreground">A pessoa entra na loja automaticamente ao criar conta e confirmar este e-mail.</p>
+          <Button>Criar convite</Button>
+          <p className="text-xs text-muted-foreground">
+            O envio de e-mail ainda não está configurado: <strong>nenhum e-mail é enviado</strong>. Copie o link do convite e envie manualmente (WhatsApp, etc.).
+            O convite vale por 7 dias, só pode ser usado uma vez e exige que a pessoa entre com o e-mail convidado.
+          </p>
+          {lastLink && (
+            <div className="rounded-lg border border-gold/40 bg-gold-soft p-3 text-sm">
+              <p className="font-medium">Link do convite (e-mail não enviado):</p>
+              <p className="mt-1 break-all text-xs">{lastLink}</p>
+            </div>
+          )}
           {!!data?.invites.length && (
             <ul className="divide-y border-t pt-2 text-sm">
-              {data.invites.map((i) => (
-                <li key={i.id} className="flex items-center justify-between py-2">
-                  <span>{i.email} · {ROLE_LABEL[i.role]} · pendente</span>
-                  <Button type="button" size="sm" variant="ghost" onClick={async () => { await supabase.from("store_invites").delete().eq("id", i.id); qc.invalidateQueries({ queryKey: key }); }}>Cancelar</Button>
-                </li>
-              ))}
+              {data.invites.map((i) => {
+                const status = i.revoked_at ? "revogado" : i.expires_at && new Date(i.expires_at) < new Date() ? "vencido" : "pendente";
+                return (
+                  <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                    <span>{i.email} · {ROLE_LABEL[i.role]} · <Badge variant={status === "pendente" ? "secondary" : "outline"}>{status}</Badge></span>
+                    <div className="flex gap-1">
+                      {status !== "revogado" && i.token && <Button type="button" size="sm" variant="outline" onClick={() => copyLink(i.token!)}>Copiar link</Button>}
+                      {status !== "revogado" && <Button type="button" size="sm" variant="outline" onClick={() => resend(i.id)}>Reenviar</Button>}
+                      {status !== "revogado" && <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => revoke(i.id)}>Revogar</Button>}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </form>
