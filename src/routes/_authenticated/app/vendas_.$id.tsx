@@ -2,16 +2,20 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Ban, Loader2, Printer } from "lucide-react";
+import { ArrowLeft, Ban, HandCoins, Loader2, Printer, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { PAYMENT_LABEL, SALE_STATUS_LABEL } from "@/lib/sales";
-import { formatBRL } from "@/lib/money";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { ENTRY_STATUS_LABEL, INSTALLMENT_STATUS_LABEL, buildSchedule, installmentStatus, type CreditContract, type CreditInstallment, type FinancialAccount, type FinancialEntry } from "@/lib/finance";
+import { formatBRL, formatCents, parseBRLToCents, toCents } from "@/lib/money";
+import { formatDate, formatDateTime, todayISO } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/app/vendas_/$id")({
@@ -35,20 +39,32 @@ function VendaPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [reverseEntry, setReverseEntry] = useState<FinancialEntry | null>(null);
 
   const key = ["sale", id];
   const { data, isLoading, error } = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const [s, items, pays, trade, events] = await Promise.all([
+      const [s, items, pays, trade, events, entries, contract, accounts] = await Promise.all([
         supabase.from("sales").select("*, clients(name, document, whatsapp)").eq("id", id).eq("store_id", store.id).maybeSingle(),
         supabase.from("sale_items").select("*, devices(model, storage, color, imei1, imei2, condition)").eq("sale_id", id),
         supabase.from("sale_payments").select("*").eq("sale_id", id).order("created_at"),
         supabase.from("sale_trade_ins").select("*, devices(model, storage, imei1, imei2, condition, status)").eq("sale_id", id),
         supabase.from("sale_events").select("*").eq("sale_id", id).order("created_at"),
+        perms.viewFinance ? supabase.from("financial_entries").select("*").eq("sale_id", id).order("created_at") : Promise.resolve({ data: [] }),
+        perms.viewFinance ? supabase.from("credit_contracts").select("*, credit_installments(*)").eq("sale_id", id).maybeSingle() : Promise.resolve({ data: null }),
+        perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id).eq("active", true) : Promise.resolve({ data: [] }),
       ]);
       if (s.error) throw s.error;
-      return { sale: s.data, items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [] };
+      return {
+        sale: s.data, items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [],
+        entries: (entries.data ?? []) as FinancialEntry[],
+        contract: (contract.data ?? null) as (CreditContract & { credit_installments: CreditInstallment[] }) | null,
+        accounts: (accounts.data ?? []) as FinancialAccount[],
+      };
     },
   });
 
@@ -72,6 +88,15 @@ function VendaPage() {
   const s = data.sale;
   const snap = (s.receipt_snapshot ?? {}) as Snapshot;
   const balance = Number(s.balance);
+  const hasCrediario = data.payments.some((p) => p.method === "crediario");
+  const refundedCents = data.entries.filter((e) => e.kind === "saida" && e.is_refund && e.status === "pago").reduce((a, e) => a + toCents(e.amount), 0);
+  const refundPendingCents = toCents(s.refund_due) - refundedCents;
+
+  function refresh() {
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["sales"] });
+    qc.invalidateQueries({ queryKey: ["finance"] });
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -85,6 +110,9 @@ function VendaPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className={s.status === "cancelada" ? "bg-destructive/10 text-destructive" : "bg-success/15 text-success"}>{SALE_STATUS_LABEL[s.status]}</Badge>
           <Button variant="outline" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" />Imprimir recibo</Button>
+          {s.status === "concluida" && balance > 0 && perms.registerPayments && (
+            <Button onClick={() => setReceiptOpen(true)}><HandCoins className="mr-1 h-4 w-4" />Registrar recebimento</Button>
+          )}
           {s.status === "concluida" && perms.cancelSales && (
             <Button variant="destructive" onClick={() => setCancelOpen(true)}><Ban className="mr-1 h-4 w-4" />Cancelar venda</Button>
           )}
@@ -95,6 +123,19 @@ function VendaPage() {
         <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm print:hidden">
           <p className="font-semibold text-destructive">Venda cancelada em {formatDateTime(s.cancelled_at)}</p>
           {s.cancel_reason && <p className="mt-1 text-muted-foreground">Motivo: {s.cancel_reason}</p>}
+        </div>
+      )}
+
+      {s.status === "cancelada" && perms.viewFinance && toCents(s.refund_due) > 0 && (
+        <div className="mb-4 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm print:hidden">
+          <p className="font-semibold">Reembolso ao cliente</p>
+          <p className="mt-1 text-muted-foreground">
+            A devolver: {formatBRL(s.refund_due)} · Já reembolsado: {formatCents(refundedCents)} · <strong className={refundPendingCents > 0 ? "text-destructive" : "text-success"}>Pendente: {formatCents(refundPendingCents)}</strong>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Cancelar a venda não comprova devolução do dinheiro — registre cada reembolso efetivo aqui.</p>
+          {refundPendingCents > 0 && perms.registerPayments && (
+            <Button size="sm" className="mt-2" onClick={() => setRefundOpen(true)}>Registrar reembolso</Button>
+          )}
         </div>
       )}
 
@@ -137,6 +178,63 @@ function VendaPage() {
             <div className="flex justify-between font-semibold"><span>Saldo pendente</span><span className={balance > 0 ? "text-warning-foreground" : ""}>{formatBRL(s.balance)}</span></div>
           </div>
         </section>
+
+        {perms.viewFinance && data.entries.length > 0 && (
+          <section className="rounded-xl border bg-card p-4 text-sm">
+            <p className="mb-2 font-semibold">Movimentos financeiros</p>
+            <ul className="space-y-1.5">
+              {data.entries.map((e) => (
+                <li key={e.id} className="flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block truncate">{e.description}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {[e.paid_at ? formatDate(e.paid_at) : e.due_date ? `vence ${formatDate(e.due_date)}` : null, ENTRY_STATUS_LABEL[e.status], e.reversal_reason ? `Motivo: ${e.reversal_reason}` : null].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    <span className={`font-medium ${e.kind === "entrada" ? "text-success" : "text-destructive"}`}>{e.kind === "entrada" ? "+" : "-"}{formatBRL(e.amount)}</span>
+                    {e.status === "pago" && e.kind === "entrada" && !e.reversal_of && perms.reversePayments && (
+                      <Button size="sm" variant="ghost" title="Estornar" onClick={() => setReverseEntry(e)}><Undo2 className="h-4 w-4" /></Button>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {perms.viewFinance && hasCrediario && (
+          <section className="rounded-xl border bg-card p-4 text-sm">
+            <p className="mb-2 font-semibold">Crediário próprio</p>
+            {data.contract ? (
+              <div className="space-y-2">
+                <p>Financiado: <strong>{formatBRL(data.contract.principal)}</strong> · {data.contract.credit_installments.filter((i) => i.status === "pago").length}/{data.contract.installments_count} parcelas pagas</p>
+                <ul className="space-y-1">
+                  {data.contract.credit_installments.sort((a, b) => a.number - b.number).map((i) => {
+                    const st = installmentStatus(i, todayISO());
+                    return (
+                      <li key={i.id} className="flex justify-between gap-2">
+                        <span>Parcela {i.number} · {formatDate(i.due_date)}</span>
+                        <span className="flex items-center gap-2">
+                          <span>{formatBRL(i.amount)}</span>
+                          <Badge variant="secondary" className={st === "pago" ? "bg-success/15 text-success" : st === "vencido" ? "bg-destructive/10 text-destructive" : ""}>{INSTALLMENT_STATUS_LABEL[st]}</Badge>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Link to="/app/financeiro" className="inline-block text-sm underline">Receber parcelas no Financeiro</Link>
+              </div>
+            ) : perms.approveCredit ? (
+              <div>
+                <p className="mb-2 text-muted-foreground">Esta venda tem valor financiado em crediário. Crie o contrato para gerar o cronograma de parcelas.</p>
+                <Button size="sm" onClick={() => setCreditOpen(true)}>Criar contrato de crediário</Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Venda com crediário aguardando a criação do contrato por um usuário autorizado.</p>
+            )}
+          </section>
+        )}
 
         {data.tradeIns.length > 0 && (
           <section className="rounded-xl border bg-card p-4 text-sm">
@@ -258,11 +356,17 @@ function VendaPage() {
         </div>
       </div>
 
+      <ReceiptDialog open={receiptOpen} onClose={() => setReceiptOpen(false)} saleId={id} balanceCents={toCents(s.balance)} accounts={data.accounts} onSaved={refresh} />
+      <CreditDialog open={creditOpen} onClose={() => setCreditOpen(false)} saleId={id} principal={data.payments.filter((p) => p.method === "crediario").reduce((a, p) => a + Number(p.amount), 0)} onSaved={refresh} />
+      <RefundDialog open={refundOpen} onClose={() => setRefundOpen(false)} saleId={id} pendingCents={refundPendingCents} accounts={data.accounts} onSaved={refresh} />
+      <ReverseEntryDialog entry={reverseEntry} onClose={() => setReverseEntry(null)} onSaved={refresh} />
+
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Cancelar venda nº {s.receipt_number}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
             Os aparelhos voltam ao estoque como disponíveis e o usado da troca é marcado como devolvido ao cliente.
+            Recebíveis em aberto são cancelados e o valor recebido fica registrado como reembolso pendente — a devolução do dinheiro é registrada à parte.
             A venda e o recibo originais são preservados no histórico.
           </p>
           <Textarea rows={3} placeholder="Motivo do cancelamento" value={reason} onChange={(e) => setReason(e.target.value)} />
@@ -275,5 +379,179 @@ function VendaPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function Fld({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><Label>{label}</Label>{children}</div>;
+}
+
+function ReceiptDialog({ open, onClose, saleId, balanceCents, accounts, onSaved }: { open: boolean; onClose: () => void; saleId: string; balanceCents: number; accounts: FinancialAccount[]; onSaved: () => void }) {
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [method, setMethod] = useState("pix");
+  const [date, setDate] = useState(todayISO());
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    const cents = parseBRLToCents(amount) ?? 0;
+    if (cents <= 0) { toast.error("Informe um valor válido."); return; }
+    if (cents > balanceCents) { toast.error(`O valor excede o saldo devedor de ${formatCents(balanceCents)}. Troco ou crédito exigem tratamento explícito.`); return; }
+    if (!accountId) { toast.error("Escolha a conta de destino."); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc("register_sale_receipt", {
+      _sale_id: saleId, _amount: cents / 100, _account_id: accountId, _method: method, _received_at: date, _note: note, _client_token: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Recebimento registrado. O saldo foi atualizado e o recibo original não foi alterado.");
+    setAmount(""); setNote("");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Registrar recebimento</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-3">
+          <p className="text-sm text-muted-foreground">Saldo devedor: <strong>{formatCents(balanceCents)}</strong>. Isso não gera outra venda nem modifica o recibo original.</p>
+          <Fld label="Valor (R$)"><Input required value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder={formatCents(balanceCents)} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Conta de destino"><Select value={accountId} onValueChange={setAccountId}><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent></Select></Fld>
+            <Fld label="Meio de pagamento"><Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PAYMENT_LABEL).filter(([k]) => k !== "crediario").map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select></Fld>
+          </div>
+          <Fld label="Data"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Fld>
+          <Fld label="Observação (opcional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Fld>
+          <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancelar</Button><Button disabled={busy}>{busy ? "Registrando…" : "Confirmar recebimento"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CreditDialog({ open, onClose, saleId, principal, onSaved }: { open: boolean; onClose: () => void; saleId: string; principal: number; onSaved: () => void }) {
+  const [count, setCount] = useState("6");
+  const [firstDue, setFirstDue] = useState(todayISO());
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const n = Math.max(1, Math.min(60, Number(count) || 1));
+  const preview = buildSchedule(toCents(principal), n, firstDue);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("create_credit_contract", {
+      _sale_id: saleId, _installments: n, _first_due: firstDue, _notes: notes, _client_token: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Contrato de crediário criado sem juros.");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Criar contrato de crediário</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-3">
+          <p className="text-sm text-muted-foreground">Principal financiado: <strong>{formatBRL(principal)}</strong> · sem juros. A soma das parcelas é sempre igual ao principal; a diferença de centavos fica na última parcela.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Quantidade de parcelas"><Input required type="number" min={1} max={60} value={count} onChange={(e) => setCount(e.target.value)} /></Fld>
+            <Fld label="Primeiro vencimento"><Input required type="date" value={firstDue} onChange={(e) => setFirstDue(e.target.value)} /></Fld>
+          </div>
+          <Fld label="Condições pactuadas (opcional)"><Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: combinado em balcão, sem encargos" /></Fld>
+          {preview.length > 0 && (
+            <div className="rounded-lg border p-3 text-sm">
+              <p className="mb-1 font-semibold">Cronograma</p>
+              <ul className="grid grid-cols-2 gap-x-4">
+                {preview.map((p) => <li key={p.number} className="flex justify-between"><span>{p.number}ª · {formatDate(p.dueDate)}</span><span>{formatCents(p.amountCents)}</span></li>)}
+              </ul>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancelar</Button><Button disabled={busy}>{busy ? "Criando…" : "Criar contrato"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RefundDialog({ open, onClose, saleId, pendingCents, accounts, onSaved }: { open: boolean; onClose: () => void; saleId: string; pendingCents: number; accounts: FinancialAccount[]; onSaved: () => void }) {
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [method, setMethod] = useState("pix");
+  const [date, setDate] = useState(todayISO());
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    const cents = parseBRLToCents(amount) ?? 0;
+    if (cents <= 0 || cents > pendingCents) { toast.error(`Valor deve ser entre 0,01 e ${formatCents(pendingCents)}.`); return; }
+    if (!accountId) { toast.error("Escolha a conta de origem."); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc("register_refund", {
+      _sale_id: saleId, _amount: cents / 100, _account_id: accountId, _method: method, _paid_at: date, _note: note, _client_token: crypto.randomUUID(),
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Reembolso registrado.");
+    setAmount(""); setNote("");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Registrar reembolso</DialogTitle></DialogHeader>
+        <form onSubmit={save} className="space-y-3">
+          <p className="text-sm text-muted-foreground">Reembolso pendente: <strong>{formatCents(pendingCents)}</strong>.</p>
+          <Fld label="Valor (R$)"><Input required value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" placeholder={formatCents(pendingCents)} /></Fld>
+          <div className="grid grid-cols-2 gap-3">
+            <Fld label="Conta de origem"><Select value={accountId} onValueChange={setAccountId}><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger><SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent></Select></Fld>
+            <Fld label="Meio"><Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PAYMENT_LABEL).filter(([k]) => k !== "crediario").map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select></Fld>
+          </div>
+          <Fld label="Data"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Fld>
+          <Fld label="Observação (opcional)"><Input value={note} onChange={(e) => setNote(e.target.value)} /></Fld>
+          <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancelar</Button><Button disabled={busy}>{busy ? "Registrando…" : "Confirmar reembolso"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReverseEntryDialog({ entry, onClose, onSaved }: { entry: FinancialEntry | null; onClose: () => void; onSaved: () => void }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!entry || busy) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("reverse_receipt", { _entry_id: entry.id, _reason: reason });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Estorno registrado com movimento reverso.");
+    setReason("");
+    onSaved(); onClose();
+  }
+
+  return (
+    <Dialog open={!!entry} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Estornar recebimento</DialogTitle></DialogHeader>
+        {entry && (
+          <form onSubmit={save} className="space-y-3">
+            <p className="text-sm text-muted-foreground">{entry.description} · {formatBRL(entry.amount)}. O lançamento original é preservado e um movimento reverso rastreável é criado.</p>
+            <Fld label="Motivo do estorno"><Input required value={reason} onChange={(e) => setReason(e.target.value)} /></Fld>
+            <DialogFooter><Button variant="outline" type="button" onClick={onClose}>Voltar</Button><Button variant="destructive" disabled={busy || !reason.trim()}>{busy ? "Estornando…" : "Confirmar estorno"}</Button></DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
