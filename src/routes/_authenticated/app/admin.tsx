@@ -40,7 +40,7 @@ function Highlights() {
       title: f.title, body: f.body || null, image_url: f.image_url || null, cta_label: f.cta_label || null, cta_url: f.cta_url || null,
       position: Number(f.position) || 0, sponsored: f.sponsored, active: false,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setF({ title: "", body: "", image_url: "", cta_label: "", cta_url: "", position: "0", sponsored: false });
     reload();
   }
@@ -82,7 +82,7 @@ function Grants() {
   async function add(e: FormEvent) {
     e.preventDefault();
     const { error } = await supabase.from("product_grants").insert({ email: email.trim().toLowerCase(), product: "fornecedores", note: note || null });
-    if (error) return toast.error(error.code === "23505" ? "Este e-mail já tem acesso." : error.message);
+    if (error) { toast.error(error.code === "23505" ? "Este e-mail já tem acesso." : error.message); return; }
     setEmail(""); setNote("");
     qc.invalidateQueries({ queryKey: ["admin-grants"] });
   }

@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type Costs = { purchase_cost: string; freight_cost: string; other_costs: string } | null;
+type Costs = { purchase_cost: string | number; freight_cost: string | number; other_costs: string | number } | null;
 
 export function DeviceForm({ device, costs, onSaved }: { device?: Device; costs?: Costs; onSaved: (id: string) => void }) {
   const { store, perms } = useStore();
@@ -58,18 +58,18 @@ export function DeviceForm({ device, costs, onSaved }: { device?: Device; costs?
     const imei1 = normalizeImei(f.imei1);
     const imei2 = normalizeImei(f.imei2);
     const imeiErr = validateImeiPair(imei1, imei2);
-    if (imeiErr) return toast.error(imeiErr);
+    if (imeiErr) { toast.error(imeiErr); return; }
     const battery = f.battery_health ? Number(f.battery_health) : null;
-    if (battery != null && (!Number.isInteger(battery) || battery < 0 || battery > 100)) return toast.error("Saúde da bateria deve ser entre 0 e 100.");
+    if (battery != null && (!Number.isInteger(battery) || battery < 0 || battery > 100)) { toast.error("Saúde da bateria deve ser entre 0 e 100."); return; }
     const money = (s: string, label: string) => {
       if (!s.trim()) return { ok: true as const, v: null };
       const c = parseBRLToCents(s);
       if (c == null) { toast.error(`Valor inválido em ${label}.`); return { ok: false as const }; }
-      return { ok: true as const, v: centsToDecimal(c) };
+      return { ok: true as const, v: c / 100 };
     };
     const sp = money(f.sale_price, "Preço de venda"); if (!sp.ok) return;
     const mp = money(f.min_price, "Preço mínimo"); if (!mp.ok) return;
-    if (sp.v && mp.v && toCents(mp.v) > toCents(sp.v)) return toast.error("O preço mínimo não pode ser maior que o preço de venda.");
+    if (sp.v && mp.v && mp.v > sp.v) { toast.error("O preço mínimo não pode ser maior que o preço de venda."); return; }
 
     const payload = {
       store_id: store.id,
@@ -107,7 +107,7 @@ export function DeviceForm({ device, costs, onSaved }: { device?: Device; costs?
       }
       const id = res.data.id;
       if (perms.viewCosts && perms.manageInventory) {
-        const c = (s: string) => centsToDecimal(parseBRLToCents(s) ?? 0);
+        const c = (s: string) => (parseBRLToCents(s) ?? 0) / 100;
         const { error } = await supabase.from("device_costs").upsert({
           device_id: id, store_id: store.id,
           purchase_cost: c(f.purchase_cost), freight_cost: c(f.freight_cost), other_costs: c(f.other_costs),

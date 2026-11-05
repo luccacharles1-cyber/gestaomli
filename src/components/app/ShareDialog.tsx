@@ -31,7 +31,7 @@ export function ShareDialog({ device, photos }: { device: Device; photos: Photo[
   }
 
   async function share() {
-    if (!selected.length) return toast.error("Selecione ao menos uma foto.");
+    if (!selected.length) { toast.error("Selecione ao menos uma foto."); return; }
     setBusy(true);
     try {
       const files = await loadFiles();
@@ -50,7 +50,7 @@ export function ShareDialog({ device, photos }: { device: Device; photos: Photo[
   }
 
   async function downloadAll() {
-    if (!selected.length) return toast.error("Selecione ao menos uma foto.");
+    if (!selected.length) { toast.error("Selecione ao menos uma foto."); return; }
     setBusy(true);
     try {
       download(await loadFiles());

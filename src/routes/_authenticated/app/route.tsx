@@ -73,7 +73,8 @@ function AppLayout() {
 
   const ctx = useMemo<StoreCtx | null>(() => {
     if (!data || data.memberships.length === 0) return null;
-    const { member: _m, store: _s } = data.memberships.find((x) => x.store.id === selected) ?? data.memberships[0];
+    const pick = data.memberships.find((x) => x.store.id === selected) ?? data.memberships[0]!;
+    const _m = pick.member, _s = pick.store;
     return {
       store: _s,
       member: _m,
@@ -143,7 +144,7 @@ function Shell({ ctx }: { ctx: StoreCtx }) {
       </div>
       <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t bg-background lg:hidden">
         {MOBILE_NAV.map((n) => {
-          const active = n.exact ? path === n.to : path.startsWith(n.to);
+          const active = "exact" in n ? path === n.to : path.startsWith(n.to);
           return (
             <Link key={n.to} to={n.to} className={cn("flex flex-col items-center gap-0.5 py-2 text-[11px]", active ? "text-foreground" : "text-muted-foreground")}>
               <n.icon className={cn("h-5 w-5", active && "text-gold")} />
@@ -188,7 +189,7 @@ function SidebarContent({ ctx, path }: { ctx: StoreCtx; path: string }) {
       )}
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
         {NAV.map((n) => {
-          const active = n.exact ? path === n.to : path.startsWith(n.to);
+          const active = "exact" in n ? path === n.to : path.startsWith(n.to);
           return (
             <Link
               key={n.to}
@@ -230,7 +231,7 @@ function Onboarding({ email }: { email: string }) {
     setBusy(true);
     const { data, error } = await supabase.rpc("create_store", { _name: name });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     localStorage.setItem("mli.store", data);
     toast.success("Loja criada.");
     await qc.invalidateQueries({ queryKey: ["session-bootstrap"] });

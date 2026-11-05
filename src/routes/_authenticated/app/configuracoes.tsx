@@ -64,19 +64,19 @@ function StoreForm() {
     setBusy(true);
     const { error } = await supabase.from("stores").update({ ...f, name: f.name.trim() }).eq("id", store.id);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Dados da loja salvos.");
     qc.invalidateQueries({ queryKey: ["session-bootstrap"] });
   }
 
   async function uploadLogo(file?: File) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) return toast.error("Envie uma imagem.");
+    if (!file.type.startsWith("image/")) { toast.error("Envie uma imagem."); return; }
     const path = `${store.id}/logo/${crypto.randomUUID()}.${file.name.split(".").pop() || "png"}`;
     const up = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
-    if (up.error) return toast.error(up.error.message);
+    if (up.error) { toast.error(up.error.message); return; }
     const { error } = await supabase.from("stores").update({ logo_path: path }).eq("id", store.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     if (store.logo_path) await supabase.storage.from(BUCKET).remove([store.logo_path]);
     toast.success("Logo atualizada.");
     qc.invalidateQueries({ queryKey: ["session-bootstrap"] });
@@ -130,15 +130,15 @@ function Team() {
   async function invite(e: FormEvent) {
     e.preventDefault();
     const { error } = await supabase.from("store_invites").insert({ store_id: store.id, email: email.trim().toLowerCase(), role, ...newPerms });
-    if (error) return toast.error(error.code === "23505" ? "Já existe convite para este e-mail." : error.message);
+    if (error) { toast.error(error.code === "23505" ? "Já existe convite para este e-mail." : error.message); return; }
     toast.success("Convite registrado. A pessoa deve criar conta com este e-mail.");
     setEmail("");
     qc.invalidateQueries({ queryKey: key });
   }
 
   async function togglePerm(memberId: string, k: PermKey, v: boolean) {
-    const { error } = await supabase.from("store_members").update({ [k]: v }).eq("id", memberId);
-    if (error) return toast.error("Sem permissão para alterar.");
+    const { error } = await supabase.from("store_members").update({ [k]: v } as Partial<Record<PermKey, boolean>>).eq("id", memberId);
+    if (error) { toast.error("Sem permissão para alterar."); return; }
     qc.invalidateQueries({ queryKey: key });
   }
 
