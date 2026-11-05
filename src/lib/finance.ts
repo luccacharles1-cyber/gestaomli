@@ -28,7 +28,7 @@ export const DOC_STATUS_LABEL: Record<string, string> = {
 
 /** Adds months to an ISO date, clamping the day to the last day of the target month (31/01 + 1 mês → 28/02). */
 export function addMonthsClamped(iso: string, months: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
   const target = new Date(Date.UTC(y, m - 1 + months, 1));
   const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
   target.setUTCDate(Math.min(d, lastDay));
