@@ -39,20 +39,31 @@ function VendaPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
 
   const key = ["sale", id];
   const { data, isLoading, error } = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const [s, items, pays, trade, events] = await Promise.all([
+      const [s, items, pays, trade, events, entries, contract, accounts] = await Promise.all([
         supabase.from("sales").select("*, clients(name, document, whatsapp)").eq("id", id).eq("store_id", store.id).maybeSingle(),
         supabase.from("sale_items").select("*, devices(model, storage, color, imei1, imei2, condition)").eq("sale_id", id),
         supabase.from("sale_payments").select("*").eq("sale_id", id).order("created_at"),
         supabase.from("sale_trade_ins").select("*, devices(model, storage, imei1, imei2, condition, status)").eq("sale_id", id),
         supabase.from("sale_events").select("*").eq("sale_id", id).order("created_at"),
+        perms.viewFinance ? supabase.from("financial_entries").select("*").eq("sale_id", id).order("created_at") : Promise.resolve({ data: [] }),
+        perms.viewFinance ? supabase.from("credit_contracts").select("*, credit_installments(*)").eq("sale_id", id).maybeSingle() : Promise.resolve({ data: null }),
+        perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id).eq("active", true) : Promise.resolve({ data: [] }),
       ]);
       if (s.error) throw s.error;
-      return { sale: s.data, items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [] };
+      return {
+        sale: s.data, items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [],
+        entries: (entries.data ?? []) as FinancialEntry[],
+        contract: (contract.data ?? null) as (CreditContract & { credit_installments: CreditInstallment[] }) | null,
+        accounts: (accounts.data ?? []) as FinancialAccount[],
+      };
     },
   });
 
