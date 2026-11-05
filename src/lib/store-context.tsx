@@ -13,6 +13,11 @@ export type Perms = {
   manageTeam: boolean;
   registerSales: boolean;
   cancelSales: boolean;
+  registerPayments: boolean;
+  reversePayments: boolean;
+  approveCredit: boolean;
+  renegotiate: boolean;
+  viewContracts: boolean;
 };
 
 export type StoreCtx = {
@@ -37,6 +42,11 @@ export function permsFor(m: Member): Perms {
     manageTeam: o || m.can_manage_team,
     registerSales: o || m.can_register_sales,
     cancelSales: o || m.can_cancel_sales,
+    registerPayments: o || m.can_register_payments,
+    reversePayments: o || m.can_reverse_payments,
+    approveCredit: o || m.can_approve_credit,
+    renegotiate: o || m.can_renegotiate,
+    viewContracts: o || m.can_view_contracts,
   };
 }
 
