@@ -5,6 +5,7 @@ import { ShoppingCart, Smartphone, UserPlus, Receipt, CheckCircle2, Circle, Info
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { stockCapitalCents } from "@/lib/devices";
+import { accountBalanceCents, installmentStatus, type FinancialAccount, type FinancialEntry } from "@/lib/finance";
 import { formatCents, toCents } from "@/lib/money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ function Dashboard() {
   const [period, setPeriod] = useState("mes");
   const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
+  const [finView, setFinView] = useState<"competencia" | "caixa">("competencia");
 
   const range = useMemo(() => {
     const today = todayISO();
@@ -35,7 +37,7 @@ function Dashboard() {
   const { data } = useQuery({
     queryKey: ["dashboard", store.id, perms.viewCosts, range.gte, range.lte],
     queryFn: async () => {
-      const [devices, photos, costs, accessories, accCosts, members, highlights, sales, soldItems] = await Promise.all([
+      const [devices, photos, costs, accessories, accCosts, members, highlights, sales, soldItems, finAccounts, finEntries, finInstallments] = await Promise.all([
         supabase.from("devices").select("id, status").eq("store_id", store.id),
         supabase.from("device_photos").select("device_id").eq("store_id", store.id),
         perms.viewCosts ? supabase.from("device_costs").select("device_id, total_cost").eq("store_id", store.id) : Promise.resolve({ data: [] }),
@@ -47,6 +49,9 @@ function Dashboard() {
         perms.viewCosts
           ? supabase.from("sale_items").select("sale_id, device_id, sales!inner(store_id, status, created_at)").eq("sales.store_id", store.id).eq("sales.status", "concluida").gte("sales.created_at", range.gte).lte("sales.created_at", range.lte)
           : Promise.resolve({ data: [] }),
+        perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id) : Promise.resolve({ data: [] }),
+        perms.viewFinance ? supabase.from("financial_entries").select("kind, status, amount, paid_amount, account_id, due_date, competence_date, paid_at, is_transfer, is_equity, contract_id").eq("store_id", store.id) : Promise.resolve({ data: [] }),
+        perms.viewFinance ? supabase.from("credit_installments").select("amount, paid_amount, due_date, status, credit_contracts!inner(store_id, status)").eq("store_id", store.id).eq("credit_contracts.status", "ativo") : Promise.resolve({ data: [] }),
       ]);
       const costMap = new Map((costs.data ?? []).map((c) => [c.device_id, c.total_cost]));
       const accMap = new Map((accCosts.data ?? []).map((c) => [c.accessory_id, c.unit_cost]));
@@ -71,6 +76,9 @@ function Dashboard() {
           ? (sales.data ?? []).reduce((acc, s) => acc + toCents(s.total), 0) -
             (soldItems.data ?? []).reduce((acc, i) => acc + toCents(costMap.get(i.device_id) ?? null), 0)
           : null,
+        finAccounts: (finAccounts.data ?? []) as FinancialAccount[],
+        finEntries: (finEntries.data ?? []) as FinancialEntry[],
+        finInstallments: (finInstallments.data ?? []) as Array<{ amount: number | string; paid_amount: number | string; due_date: string; status: string }>,
       };
     },
   });
