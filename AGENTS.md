@@ -15,3 +15,6 @@
 - Store files go in private bucket `store-files` under `{store_id}/devices|logo/...` and are only shown via signed URLs.
 - Money is `numeric(12,2)` in DB and summed as integer cents in `src/lib/money.ts`.
 - Unbuilt modules render `EmDesenvolvimento` with no fake actions.
+- Sales are written only through the security-definer RPCs `complete_sale` / `cancel_sale` (transactional, idempotent via `client_token`, permission-checked); sale tables are read-only via RLS. The emitted receipt is the immutable `sales.receipt_snapshot` taken at completion.
+- Trade-ins create a `devices` row in `em_conferencia` with the agreed value as `device_costs.purchase_cost`; cancelling a sale returns sold devices to `disponivel` and marks trade-ins `devolvido_cliente`.
+- Sub-pages of a list route use the trailing-underscore pattern (`vendas_.nova.tsx`), because a content route without `<Outlet />` swallows nested children.

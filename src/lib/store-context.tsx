@@ -11,6 +11,8 @@ export type Perms = {
   approveEvaluations: boolean;
   manageInventory: boolean;
   manageTeam: boolean;
+  registerSales: boolean;
+  cancelSales: boolean;
 };
 
 export type StoreCtx = {
@@ -33,6 +35,8 @@ export function permsFor(m: Member): Perms {
     approveEvaluations: o || m.can_approve_evaluations,
     manageInventory: o || m.can_manage_inventory,
     manageTeam: o || m.can_manage_team,
+    registerSales: o || m.can_register_sales,
+    cancelSales: o || m.can_cancel_sales,
   };
 }
 

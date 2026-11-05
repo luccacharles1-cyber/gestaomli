@@ -28,6 +28,8 @@ const PERMS = [
   ["can_approve_evaluations", "Aprovar avaliações acima do limite"],
   ["can_manage_inventory", "Cadastrar e editar estoque"],
   ["can_manage_team", "Gerenciar equipe"],
+  ["can_register_sales", "Registrar vendas"],
+  ["can_cancel_sales", "Cancelar vendas e estornar"],
 ] as const;
 type PermKey = (typeof PERMS)[number][0];
 
@@ -125,6 +127,7 @@ function Team() {
   const [role, setRole] = useState<"manager" | "seller">("seller");
   const [newPerms, setNewPerms] = useState<Record<PermKey, boolean>>({
     can_view_costs: false, can_view_finance: false, can_give_discounts: false, can_approve_evaluations: false, can_manage_inventory: false, can_manage_team: false,
+    can_register_sales: true, can_cancel_sales: false,
   });
 
   async function invite(e: FormEvent) {

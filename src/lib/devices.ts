@@ -12,6 +12,7 @@ export const STATUS_LABEL: Record<DeviceStatus, string> = {
   em_assistencia: "Em assistência",
   vendido: "Vendido",
   devolvido_fornecedor: "Devolvido ao fornecedor",
+  devolvido_cliente: "Devolvido ao cliente",
 };
 
 export const STATUS_ORDER: DeviceStatus[] = [
@@ -22,6 +23,7 @@ export const STATUS_ORDER: DeviceStatus[] = [
   "em_assistencia",
   "vendido",
   "devolvido_fornecedor",
+  "devolvido_cliente",
 ];
 
 /** Statuses where the unit still belongs to the store's stock. */
@@ -86,4 +88,5 @@ export const STATUS_VARIANT: Record<DeviceStatus, string> = {
   em_assistencia: "bg-destructive/10 text-destructive",
   vendido: "bg-primary text-primary-foreground",
   devolvido_fornecedor: "bg-muted text-muted-foreground",
+  devolvido_cliente: "bg-muted text-muted-foreground",
 };
