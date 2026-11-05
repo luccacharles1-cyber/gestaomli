@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/_authenticated/app/vendas/$id")({
+export const Route = createFileRoute("/_authenticated/app/vendas_/$id")({
   head: () => ({ meta: [{ title: "Venda — MLI Gestão" }, { name: "description", content: "Detalhes da venda e recibo." }, { property: "og:title", content: "Venda — MLI Gestão" }, { property: "og:description", content: "Detalhes da venda e recibo." }] }),
   component: VendaPage,
 });

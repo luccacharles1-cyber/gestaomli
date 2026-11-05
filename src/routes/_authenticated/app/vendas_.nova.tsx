@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export const Route = createFileRoute("/_authenticated/app/vendas/nova")({
+export const Route = createFileRoute("/_authenticated/app/vendas_/nova")({
   validateSearch: (s: Record<string, unknown>) => ({ device: typeof s["device"] === "string" ? s["device"] : undefined }),
   head: () => ({ meta: [{ title: "Nova venda — MLI Gestão" }, { name: "description", content: "Registrar venda com troca e pagamentos combinados." }, { property: "og:title", content: "Nova venda — MLI Gestão" }, { property: "og:description", content: "Registrar venda com troca e pagamentos combinados." }] }),
   component: NovaVenda,
