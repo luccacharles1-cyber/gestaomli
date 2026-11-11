@@ -1457,6 +1457,54 @@ export type Database = {
           },
         ]
       }
+      sale_invoice_files: {
+        Row: {
+          created_at: string
+          created_by: string
+          filename: string
+          id: string
+          kind: string
+          path: string
+          sale_id: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          filename: string
+          id?: string
+          kind: string
+          path: string
+          sale_id: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          filename?: string
+          id?: string
+          kind?: string
+          path?: string
+          sale_id?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_invoice_files_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_invoice_files_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_items: {
         Row: {
           created_at: string

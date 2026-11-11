@@ -1,3 +1,4 @@
+import { SaleDocuments } from "@/components/app/SaleDocuments";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -19,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/app/vendas_/$id")({
-  head: () => ({ meta: [{ title: "Venda — MLI Gestão" }, { name: "description", content: "Detalhes da venda e recibo." }, { property: "og:title", content: "Venda — MLI Gestão" }, { property: "og:description", content: "Detalhes da venda e recibo." }] }),
+  head: () => ({ meta: [{ title: "Venda — MLI Gestão" }, { name: "description", content: "Detalhes da venda e recibo." }, { property: "og:title", content: "Venda — MLI Gestão" }, { property: "og:description", content: "Detalhes da venda e recibo." },{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}] }),
   component: VendaPage,
 });
 
@@ -109,7 +110,7 @@ function VendaPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary" className={s.status === "cancelada" ? "bg-destructive/10 text-destructive" : "bg-success/15 text-success"}>{SALE_STATUS_LABEL[s.status]}</Badge>
-          <Button variant="outline" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" />Imprimir recibo</Button>
+
           {s.status === "concluida" && balance > 0 && perms.registerPayments && (
             <Button onClick={() => setReceiptOpen(true)}><HandCoins className="mr-1 h-4 w-4" />Registrar recebimento</Button>
           )}
@@ -267,94 +268,7 @@ function VendaPage() {
         </section>
       </div>
 
-      {/* Recibo imprimível — gerado do snapshot salvo na conclusão, imutável */}
-      <div id="recibo" className="mt-6 rounded-xl border bg-card p-8 text-sm print:mt-0 print:border-0 print:p-0">
-        <div className="flex items-start justify-between gap-4 border-b pb-4">
-          <div>
-            <p className="text-lg font-bold">{snap.store?.name ?? store.name}</p>
-            {snap.store?.legal_name && <p>{snap.store.legal_name}</p>}
-            {snap.store?.document && <p>CNPJ/CPF: {snap.store.document}</p>}
-            {snap.store?.address && <p>{snap.store.address}</p>}
-            {snap.store?.phone && <p>{snap.store.phone}{snap.store?.email ? ` · ${snap.store.email}` : ""}</p>}
-          </div>
-          <div className="text-right">
-            <p className="font-bold">RECIBO DE VENDA</p>
-            <p>Nº {String(s.receipt_number ?? 0).padStart(6, "0")}</p>
-            <p>{formatDate(s.created_at)}</p>
-            {s.status === "cancelada" && <p className="font-bold text-destructive">CANCELADO</p>}
-          </div>
-        </div>
-
-        {snap.client && (
-          <div className="border-b py-3">
-            <p className="font-semibold">Cliente</p>
-            <p>{snap.client.name}{snap.client.document ? ` · CPF/CNPJ: ${snap.client.document}` : ""}</p>
-            {snap.client.whatsapp && <p>{snap.client.whatsapp}{snap.client.email ? ` · ${snap.client.email}` : ""}</p>}
-            {snap.client.address && <p>{snap.client.address}</p>}
-          </div>
-        )}
-
-        <div className="border-b py-3">
-          <p className="mb-1 font-semibold">Produtos</p>
-          <table className="w-full">
-            <tbody>
-              {(snap.items ?? []).map((i, idx) => (
-                <tr key={idx} className="align-top">
-                  <td className="py-1 pr-2">
-                    {i.model} {i.storage} {i.color} {i.condition === "novo" ? "(Novo)" : "(Seminovo)"}
-                    {(i.imei1 || i.imei2 || i.serial_number) && (
-                      <span className="block text-xs">
-                        {[i.imei1 ? `IMEI 1: ${i.imei1}` : null, i.imei2 ? `IMEI 2: ${i.imei2}` : null, i.serial_number ? `Série: ${i.serial_number}` : null].filter(Boolean).join(" · ")}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-1 text-right">{formatBRL(i.price)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {snap.trade_in && (
-          <div className="border-b py-3">
-            <p className="font-semibold">Aparelho recebido na troca</p>
-            <p>
-              {snap.trade_in.model} {snap.trade_in.storage} {snap.trade_in.color} — valor acordado {formatBRL(snap.trade_in.agreed_value)}
-              {(snap.trade_in.imei1 || snap.trade_in.imei2) && (
-                <span className="block text-xs">{[snap.trade_in.imei1 ? `IMEI 1: ${snap.trade_in.imei1}` : null, snap.trade_in.imei2 ? `IMEI 2: ${snap.trade_in.imei2}` : null].filter(Boolean).join(" · ")}</span>
-              )}
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-1 border-b py-3">
-          <div className="flex justify-between"><span>Subtotal</span><span>{formatBRL(s.items_total)}</span></div>
-          {Number(s.discount) > 0 && <div className="flex justify-between"><span>Desconto</span><span>-{formatBRL(s.discount)}</span></div>}
-          <div className="flex justify-between font-bold"><span>Total da venda</span><span>{formatBRL(s.total)}</span></div>
-          {(snap.payments ?? []).map((p, idx) => (
-            <div key={idx} className="flex justify-between"><span>Recebido · {PAYMENT_LABEL[p.method]}{p.installments ? ` ${p.installments}x` : ""}</span><span>{formatBRL(p.amount)}</span></div>
-          ))}
-          {snap.trade_in && <div className="flex justify-between"><span>Usado na troca</span><span>{formatBRL(snap.trade_in.agreed_value)}</span></div>}
-          {balance > 0 ? (
-            <div className="flex justify-between font-bold"><span>Saldo pendente</span><span>{formatBRL(s.balance)}</span></div>
-          ) : (
-            <p className="pt-1">Quitado na data deste recibo.</p>
-          )}
-        </div>
-
-        {snap.store?.warranty_text && (
-          <div className="border-b py-3">
-            <p className="font-semibold">Condições de garantia</p>
-            <p className="whitespace-pre-wrap">{snap.store.warranty_text}</p>
-          </div>
-        )}
-
-        <p className="pt-3 text-xs">Este recibo não é nota fiscal. Documento gerado em {formatDateTime(s.created_at)}.</p>
-        <div className="mt-10 grid grid-cols-2 gap-8">
-          <p className="border-t pt-1 text-center text-xs">Assinatura da loja</p>
-          <p className="border-t pt-1 text-center text-xs">Assinatura do cliente</p>
-        </div>
-      </div>
+      <div className="mt-6"><SaleDocuments saleId={id} /></div>
 
       <ReceiptDialog open={receiptOpen} onClose={() => setReceiptOpen(false)} saleId={id} balanceCents={toCents(s.balance)} accounts={data.accounts} onSaved={refresh} />
       <CreditDialog open={creditOpen} onClose={() => setCreditOpen(false)} saleId={id} principal={data.payments.filter((p) => p.method === "crediario").reduce((a, p) => a + Number(p.amount), 0)} onSaved={refresh} />

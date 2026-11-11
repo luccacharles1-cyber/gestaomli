@@ -9,6 +9,11 @@
 - [ ] Enforce existing store, sales, cost and finance permissions in server queries.
 - [ ] Verify cash, trade-in, partial credit and cancelled sales, dashboard parity, and seller restrictions; report limitations.
 
+# Sale documents
+- [ ] Reuse immutable numbered sale receipts in Documents and New document; view, PDF and print in both screens without duplicate numbering.
+- [ ] Attach externally issued XML/PDF invoices to sales in Documents and sale detail; private storage and server-authorized store linkage.
+- [ ] Verify receipt identity, pending balance and invoice read-back; report test limits.
+
 # Invitation access review
 - [x] Copy an existing invite from Team and compare fresh-browser app and hosted preview access.
 - [x] Preserve the public invitation and confirmation return; warn about restricted preview links and prefer a configured published origin.

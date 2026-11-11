@@ -17,9 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SaleDocuments } from "@/components/app/SaleDocuments";
 
 export const Route = createFileRoute("/_authenticated/app/documentos")({
-  head: () => ({ meta: [{ title: "Documentos — MLI Gestão" }, { name: "description", content: "Contratos e termos vinculados às vendas, com assinatura externa via assinador GOV.BR." }, { property: "og:title", content: "Documentos — MLI Gestão" }, { property: "og:description", content: "Contratos e termos vinculados às vendas, com assinatura externa via assinador GOV.BR." }] }),
+  head: () => ({ meta: [{ title: "Documentos — MLI Gestão" }, { name: "description", content: "Recibos numerados, notas fiscais anexadas e contratos da loja." }, { property: "og:title", content: "Documentos — MLI Gestão" }, { property: "og:description", content: "Recibos, notas fiscais anexadas e contratos vinculados às vendas." },{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}] }),
   component: Documentos,
 });
 
@@ -57,6 +58,7 @@ function Documentos() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader title="Documentos e contratos" subtitle="Contratos vinculados às vendas, com emissão, assinatura externa e arquivo assinado preservado." />
+      <SaleDocuments />
 
       <section className="grid gap-3 sm:grid-cols-2">
         {Object.entries(CONTRACT_TYPE_LABEL).map(([type, label]) => {
@@ -74,7 +76,7 @@ function Documentos() {
       </section>
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => setNewOpen(true)}><FileText className="mr-1 h-4 w-4" />Novo documento</Button>
+        <Button onClick={() => setNewOpen(true)}><FileText className="mr-1 h-4 w-4" />Novo contrato ou termo</Button>
         <Button variant="outline" onClick={() => setTplOpen(true)}>Gerenciar modelos</Button>
       </div>
 
