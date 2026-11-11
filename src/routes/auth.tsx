@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -35,6 +36,7 @@ function AuthPage() {
   const [tab, setTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -125,7 +127,20 @@ function AuthPage() {
             <TabsContent value="login">
               <form onSubmit={onLogin} className="mt-4 space-y-4">
                 <Field label="E-mail" id="email"><Input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-                <Field label="Senha" id="password"><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+                <Field label="Senha" id="password">
+                  <div className="relative">
+                    <Input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password" required className="pr-11" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((visible) => !visible)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    </button>
+                  </div>
+                </Field>
                 <Button className="w-full" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</Button>
                 <button type="button" className="w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline" onClick={() => setTab("forgot")}>
                   Esqueci minha senha
