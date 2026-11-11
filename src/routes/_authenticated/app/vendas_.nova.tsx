@@ -68,7 +68,7 @@ function NovaVenda() {
       const [c, d, ev] = await Promise.all([
         supabase.from("clients").select("id, name, whatsapp").eq("store_id", store.id).order("name"),
         supabase.from("devices").select("*").eq("store_id", store.id).in("status", ["disponivel", "reservado"]).order("model"),
-        supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).is("sale_id", null).neq("status", "utilizada").order("created_at", { ascending: false }),
+        supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).is("sale_id", null).eq("archived", false).neq("status", "utilizada").order("created_at", { ascending: false }),
       ]);
       if (ev.error) throw ev.error;
       if (c.error) throw c.error;

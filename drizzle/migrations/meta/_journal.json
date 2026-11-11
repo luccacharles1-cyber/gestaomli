@@ -92,6 +92,27 @@
       "when": 1794428126319,
       "tag": "0012_optional_trade_in_evaluation",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794435596692,
+      "tag": "0013_evaluation_record_actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794435859836,
+      "tag": "0014_evaluation_reference_history_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794435938353,
+      "tag": "0015_evaluation_reference_update_link",
+      "breakpoints": true
     }
   ]
 }

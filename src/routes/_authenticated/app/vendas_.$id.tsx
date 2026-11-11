@@ -49,7 +49,7 @@ function VendaPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const [s, items, pays, trade, events, entries, contract, accounts] = await Promise.all([
+      const [s, items, pays, trade, events, entries, contract, accounts, evaluations] = await Promise.all([
         supabase.from("sales").select("*, clients(name, document, whatsapp)").eq("id", id).eq("store_id", store.id).maybeSingle(),
         supabase.from("sale_items").select("*, devices(model, storage, color, imei1, imei2, condition)").eq("sale_id", id),
         supabase.from("sale_payments").select("*").eq("sale_id", id).order("created_at"),
@@ -58,13 +58,16 @@ function VendaPage() {
         perms.viewFinance ? supabase.from("financial_entries").select("*").eq("sale_id", id).order("created_at") : Promise.resolve({ data: [] }),
         perms.viewFinance ? supabase.from("credit_contracts").select("*, credit_installments(*)").eq("sale_id", id).maybeSingle() : Promise.resolve({ data: null }),
         perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id).eq("active", true) : Promise.resolve({ data: [] }),
+        supabase.from("evaluations").select("*").eq("store_id",store.id).eq("sale_id",id),
       ]);
       if (s.error) throw s.error;
+      if (evaluations.error) throw evaluations.error;
       return {
         sale: s.data, items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [],
         entries: (entries.data ?? []) as FinancialEntry[],
         contract: (contract.data ?? null) as (CreditContract & { credit_installments: CreditInstallment[] }) | null,
         accounts: (accounts.data ?? []) as FinancialAccount[],
+        evaluations: evaluations.data ?? [],
       };
     },
   });
@@ -265,6 +268,7 @@ function VendaPage() {
             ))}
           </ul>
           {s.notes && <p className="mt-3 border-t pt-2 text-muted-foreground">Obs.: {s.notes}</p>}
+          {data.evaluations.map(e => <div key={e.id} className="mt-3 border-t pt-3"><p className="font-semibold">Avaliação do usado{e.archived ? " · Arquivada" : ""}</p><p>{e.model} {e.storage} · Valor acordado: {formatBRL(e.offered_value)}</p><p>Referência: {e.reference_value == null ? "Sem referência" : formatBRL(e.reference_value)} · Sugerido: {e.suggested_value == null ? "—" : formatBRL(e.suggested_value)}</p><p>{(e.adjustments as Array<{kind:string;label:string;amount:number}>).map(a=>`${a.kind}: ${a.label} (${formatBRL(a.amount)})`).join(" · ") || "Sem ajustes"}</p>{e.notes && <p>{e.notes}</p>}</div>)}
         </section>
       </div>
 

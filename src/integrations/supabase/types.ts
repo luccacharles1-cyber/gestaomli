@@ -815,6 +815,7 @@ export type Database = {
         Row: {
           active: boolean
           amount: number
+          archived: boolean
           created_at: string
           id: string
           kind: string
@@ -824,6 +825,7 @@ export type Database = {
         Insert: {
           active?: boolean
           amount: number
+          archived?: boolean
           created_at?: string
           id?: string
           kind: string
@@ -833,6 +835,7 @@ export type Database = {
         Update: {
           active?: boolean
           amount?: number
+          archived?: boolean
           created_at?: string
           id?: string
           kind?: string
@@ -851,6 +854,7 @@ export type Database = {
       }
       evaluation_prices: {
         Row: {
+          archived: boolean
           id: string
           model: string
           reference_value: number
@@ -859,6 +863,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
           id?: string
           model: string
           reference_value: number
@@ -867,6 +872,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
           id?: string
           model?: string
           reference_value?: number
@@ -889,6 +895,7 @@ export type Database = {
           adjustments: Json
           approved_at: string | null
           approved_by: string | null
+          archived: boolean
           client_id: string | null
           created_at: string
           created_by: string
@@ -898,6 +905,7 @@ export type Database = {
           notes: string | null
           offered_value: number
           opportunity_id: string | null
+          reference_id: string | null
           reference_value: number | null
           sale_id: string | null
           status: string
@@ -909,6 +917,7 @@ export type Database = {
           adjustments?: Json
           approved_at?: string | null
           approved_by?: string | null
+          archived?: boolean
           client_id?: string | null
           created_at?: string
           created_by: string
@@ -918,6 +927,7 @@ export type Database = {
           notes?: string | null
           offered_value: number
           opportunity_id?: string | null
+          reference_id?: string | null
           reference_value?: number | null
           sale_id?: string | null
           status: string
@@ -929,6 +939,7 @@ export type Database = {
           adjustments?: Json
           approved_at?: string | null
           approved_by?: string | null
+          archived?: boolean
           client_id?: string | null
           created_at?: string
           created_by?: string
@@ -938,6 +949,7 @@ export type Database = {
           notes?: string | null
           offered_value?: number
           opportunity_id?: string | null
+          reference_id?: string | null
           reference_value?: number | null
           sale_id?: string | null
           status?: string
@@ -958,6 +970,13 @@ export type Database = {
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluations_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_prices"
             referencedColumns: ["id"]
           },
           {
@@ -2183,6 +2202,16 @@ export type Database = {
       is_store_member: { Args: { _store_id: string }; Returns: boolean }
       is_store_member_any: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      manage_evaluation_record: {
+        Args: {
+          _action: string
+          _id?: string
+          _kind: string
+          _store_id: string
+          _values?: Json
+        }
+        Returns: string
+      }
       mark_notifications_read: { Args: { _ids: string[] }; Returns: undefined }
       receive_installments: {
         Args: {

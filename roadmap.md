@@ -36,3 +36,8 @@ Limits: no published URL exists; external invitation access requires publication
 - Stock and catalog-model proposals and clipboard passed in desktop Chromium. Catalog selection conservatively requires availability confirmation; there is no independent product catalog table, so existing inventory/evaluation model registrations supply options.
 - Photo sharing: real JPEG and matching commercial text payload, copy/paste and 390px mobile layout passed; native share was intercepted, not delivered to WhatsApp.
 - Not verified: actual WhatsApp delivery on physical devices; physical printing; invoice download through external browser signed URL; full cash/credit/cancelled report scenarios and dashboard parity in browser; manual trade-in completion by seller; isolated other-store invoice rejection. These need device/service access or further test fixtures.
+
+# Evaluation record actions
+- [x] Add row editing, confirmed deletion and historical archiving with server permissions.
+- [x] Verify owner changes, snapshots, duplicate references and restrictions; remove temporary test data.
+- [ ] Restore original values of existing evaluation iphone 13: a seller test unexpectedly had approval/team permissions and updated it; original amount/storage/client/notes are unavailable. Ask owner for original values.
