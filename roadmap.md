@@ -1,3 +1,8 @@
+# Device photo sharing
+- [x] Include independent commercial description and sale price choices, selected by default, with preview, explicit copy and photo download alternatives.
+- [ ] Verify commercial-only payloads, selected photos, clipboard and desktop/mobile layout.
+- [ ] Report actual WhatsApp/device delivery verification limits and stop.
+
 # Invitation access review
 - [x] Copy an existing invite from Team and compare fresh-browser app and hosted preview access.
 - [x] Preserve the public invitation and confirmation return; warn about restricted preview links and prefer a configured published origin.

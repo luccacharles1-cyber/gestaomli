@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Download, Share2 } from "lucide-react";
+import { Copy, Download, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { commercialDescription, type Device } from "@/lib/devices";
-import { formatBRL } from "@/lib/money";
+import { type Device } from "@/lib/devices";
+import { deviceShareText } from "@/lib/device-share";
 
 type Photo = { id: string; url: string; path: string };
 
@@ -13,16 +13,17 @@ type Photo = { id: string; url: string; path: string };
 export function ShareDialog({ device, photos }: { device: Device; photos: Photo[] }) {
   const [selected, setSelected] = useState<string[]>(() => photos.map((p) => p.id));
   const [withText, setWithText] = useState(true);
-  const [withPrice, setWithPrice] = useState(false);
+  const [withPrice, setWithPrice] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const text = commercialDescription(device, withPrice, formatBRL);
+  const { text, omitted } = deviceShareText(device, withText, withPrice);
 
   async function loadFiles(): Promise<File[]> {
     const chosen = photos.filter((p) => selected.includes(p.id));
     return Promise.all(
       chosen.map(async (p, i) => {
         const res = await fetch(p.url);
+        if (!res.ok) throw new Error("Não foi possível carregar uma das fotos. Tente novamente.");
         const blob = await res.blob();
         const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
         return new File([blob], `${device.model.replace(/\s+/g, "-")}-${i + 1}.${ext}`, { type: blob.type || "image/jpeg" });
@@ -35,15 +36,15 @@ export function ShareDialog({ device, photos }: { device: Device; photos: Photo[
     setBusy(true);
     try {
       const files = await loadFiles();
-      const data: ShareData = { files, ...(withText ? { text } : {}) };
-      if (navigator.canShare && navigator.canShare(data)) {
+      const data: ShareData = { files, ...(text ? { text } : {}) };
+      if (typeof navigator.share === "function" && (!navigator.canShare || navigator.canShare(data))) {
         await navigator.share(data);
       } else {
         toast.info("Este navegador não permite compartilhar arquivos. Baixando as fotos.");
         download(files);
       }
     } catch (e) {
-      if (!(e instanceof DOMException && e.name === "AbortError")) toast.error("Não foi possível compartilhar.");
+      if (!(e instanceof DOMException && e.name === "AbortError")) toast.error("Não foi possível compartilhar. Use Baixar fotos e Copiar descrição e preço.");
     } finally {
       setBusy(false);
     }
@@ -54,9 +55,19 @@ export function ShareDialog({ device, photos }: { device: Device; photos: Photo[
     setBusy(true);
     try {
       download(await loadFiles());
-      if (withText) await navigator.clipboard?.writeText(text).then(() => toast.success("Descrição copiada."), () => undefined);
+    } catch {
+      toast.error("Não foi possível baixar as fotos. Tente novamente.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Texto copiado.");
+    } catch {
+      toast.error("Não foi possível copiar. Selecione e copie o texto da prévia.");
     }
   }
 
@@ -75,7 +86,7 @@ export function ShareDialog({ device, photos }: { device: Device; photos: Photo[
       <DialogTrigger asChild>
         <Button variant="outline" disabled={!photos.length}><Share2 className="mr-1 h-4 w-4" />Compartilhar fotos</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Compartilhar fotos</DialogTitle>
           <DialogDescription>Somente as fotos selecionadas são enviadas. Custos e dados internos nunca saem.</DialogDescription>
@@ -84,25 +95,33 @@ export function ShareDialog({ device, photos }: { device: Device; photos: Photo[
           {photos.map((p) => {
             const on = selected.includes(p.id);
             return (
-              <button
+              <Button
                 key={p.id}
                 type="button"
+                variant="ghost"
+                aria-label={`Foto ${photos.indexOf(p) + 1}`}
+                aria-pressed={on}
                 onClick={() => setSelected((s) => (on ? s.filter((x) => x !== p.id) : [...s, p.id]))}
-                className={`relative aspect-square overflow-hidden rounded-md border-2 ${on ? "border-gold" : "border-transparent opacity-50"}`}
+                className={`relative aspect-square h-auto w-full overflow-hidden rounded-md border-2 p-0 ${on ? "border-gold" : "border-transparent opacity-50"}`}
               >
                 <img src={p.url} alt="" className="h-full w-full object-cover" />
-              </button>
+              </Button>
             );
           })}
         </div>
         <label className="flex items-center gap-2 text-sm"><Checkbox checked={withText} onCheckedChange={(v) => setWithText(v === true)} />Incluir descrição comercial</label>
-        <label className="flex items-center gap-2 text-sm"><Checkbox checked={withPrice} disabled={!withText} onCheckedChange={(v) => setWithPrice(v === true)} />Incluir preço</label>
-        {withText && <p className="rounded-md bg-muted p-3 text-sm">{text}</p>}
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" onClick={downloadAll} disabled={busy}><Download className="mr-1 h-4 w-4" />Baixar</Button>
-          <Button onClick={share} disabled={busy}><Share2 className="mr-1 h-4 w-4" />{busy ? "Preparando…" : "Compartilhar"}</Button>
+        <label className="flex items-center gap-2 text-sm"><Checkbox checked={withPrice} onCheckedChange={(v) => setWithPrice(v === true)} />Incluir preço de venda</label>
+        <div className="space-y-2" aria-live="polite">
+          <p className="text-sm font-medium">Prévia do texto</p>
+          <p className="select-text whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-sm" data-testid="share-text-preview">{text || "Nenhum texto será compartilhado."}</p>
+          {omitted.map((notice) => <p key={notice} className="text-xs text-muted-foreground">{notice}</p>)}
         </div>
-        <p className="text-xs text-muted-foreground">No celular, escolha o WhatsApp na lista do compartilhamento.</p>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="outline" onClick={copyText} disabled={busy || !text}><Copy className="mr-1 h-4 w-4" />Copiar descrição e preço</Button>
+          <Button type="button" variant="outline" onClick={downloadAll} disabled={busy || !selected.length}><Download className="mr-1 h-4 w-4" />Baixar fotos</Button>
+          <Button type="button" onClick={share} disabled={busy || !selected.length}><Share2 className="mr-1 h-4 w-4" />{busy ? "Preparando…" : "Compartilhar"}</Button>
+        </div>
+        <p className="text-xs text-muted-foreground">O WhatsApp pode receber as fotos sem o texto. Copie o texto para colar como legenda ou mensagem.</p>
       </DialogContent>
     </Dialog>
   );
