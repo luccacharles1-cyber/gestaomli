@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AccountMenu } from "@/components/app/AccountMenu";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
       { property: "og:title", content: "Administração da plataforma — MLI Gestão" },
       { property: "og:description", content: "Lojas, planos, testes, cortesias e suspensões da plataforma MLI Gestão." },
       { name: "robots", content: "noindex" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AdminPage,
@@ -34,7 +37,8 @@ function AdminDenied() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   return (
-    <div className="grid min-h-screen place-items-center p-6 text-center">
+    <div className="relative grid min-h-screen place-items-center p-6 text-center">
+      <div className="absolute right-4 top-4"><AccountMenu /></div>
       <div>
         <p className="font-semibold">Acesso restrito ao administrador da plataforma.</p>
         <p className="mt-2 text-sm text-muted-foreground">Sua conta de loja não tem autorização para esta área.</p>
@@ -64,6 +68,7 @@ type StoreRow = {
 };
 
 function AdminPage() {
+  const { user } = Route.useRouteContext();
   const { data: isAdmin, isLoading } = useQuery({
     queryKey: ["is-platform-admin"],
     queryFn: async () => {
@@ -79,7 +84,7 @@ function AdminPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div><h1 className="text-2xl font-semibold">Administração da plataforma</h1><p className="text-sm text-muted-foreground">Sem acesso a estoque, clientes ou financeiro das lojas.</p></div>
-        <Link to="/app" className="text-sm underline">Ir para a gestão da loja</Link>
+        <div className="ml-auto flex items-center gap-3"><Link to="/app" className="text-sm underline">Ir para a gestão da loja</Link><AccountMenu email={user.email ?? null} /></div>
       </div>
       <Tabs defaultValue="geral">
         <TabsList><TabsTrigger value="geral">Visão geral</TabsTrigger><TabsTrigger value="lojas">Lojas</TabsTrigger><TabsTrigger value="planos">Planos</TabsTrigger></TabsList>

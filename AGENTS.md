@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Account menus share the ordered sign-out helper (cancel requests, clear queries, local auth sign-out, clear account storage, replace with login); recovery changes require a recovery-link session and preserve a sanitized invite destination.
 - Every store-owned table carries `store_id` and is protected by RLS via `is_store_member` / `has_store_permission` — isolation must never rely on UI filters.
 - Device costs live in `device_costs` / `accessory_costs` (permission-gated RLS) so users without cost permission never receive them.
 - Store files go in private bucket `store-files` under `{store_id}/devices|logo/...` and are only shown via signed URLs.

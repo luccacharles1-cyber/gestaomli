@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { passwordLogin, safeAccountRedirect } from "@/lib/account-auth";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): { redirect?: string | undefined } => {
     const r = search["redirect"];
-    return { redirect: typeof r === "string" && r.startsWith("/") && !r.startsWith("//") ? r : undefined };
+    return { redirect: safeAccountRedirect(r) };
   },
   head: () => ({
     meta: [
@@ -36,7 +37,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const dest = () => redirectTo ?? "/app";
+  const dest = () => redirectTo ?? safeAccountRedirect(sessionStorage.getItem("mli.auth.redirect")) ?? "/app";
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -47,8 +48,9 @@ function AuthPage() {
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await passwordLogin(email, password, (credentials) => supabase.auth.signInWithPassword(credentials));
     setBusy(false);
     if (error) { toast.error(error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : error.message); return; }
     navigate({ to: dest() });
@@ -61,7 +63,7 @@ function AuthPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}${dest()}` },
+      options: { emailRedirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(dest())}` },
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
@@ -73,7 +75,7 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password?redirect=${encodeURIComponent(dest())}`,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
@@ -81,6 +83,7 @@ function AuthPage() {
   }
 
   async function oauth(provider: "google" | "lovable") {
+    sessionStorage.setItem("mli.auth.redirect", dest());
     const result = await lovable.auth.signInWithOAuth(provider, { redirect_uri: window.location.origin + "/auth" });
     if (result.error) { toast.error("Não foi possível entrar. Tente novamente."); return; }
     if (result.redirected) return;
@@ -116,12 +119,13 @@ function AuthPage() {
             </TabsList>
             <TabsContent value="login">
               <form onSubmit={onLogin} className="mt-4 space-y-4">
-                <Field label="E-mail" id="email"><Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-                <Field label="Senha" id="password"><Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+                <Field label="E-mail" id="email"><Input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+                <Field label="Senha" id="password"><Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
                 <Button className="w-full" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</Button>
                 <button type="button" className="w-full text-center text-sm text-muted-foreground underline-offset-4 hover:underline" onClick={() => setTab("forgot")}>
                   Esqueci minha senha
                 </button>
+                <Button type="button" variant="link" className="w-full" onClick={() => setTab("forgot")}>Ainda não tenho senha</Button>
               </form>
             </TabsContent>
             <TabsContent value="signup">

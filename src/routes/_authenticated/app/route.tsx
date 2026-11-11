@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/app/NotificationsBell";
 import { accessBlocked, BILLING_LABEL } from "@/lib/platform";
 import { formatDate } from "@/lib/format";
+import { AccountMenu } from "@/components/app/AccountMenu";
+import { endAccountSession } from "@/lib/account-auth";
 
 export const Route = createFileRoute("/_authenticated/app")({
   head: () => ({
@@ -25,6 +27,8 @@ export const Route = createFileRoute("/_authenticated/app")({
       { property: "og:title", content: "Painel — MLI Gestão" },
       { property: "og:description", content: "Painel de gestão da sua loja." },
       { name: "robots", content: "noindex" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AppLayout,
@@ -59,7 +63,7 @@ function useSession() {
       if (error) throw error;
       return {
         user: u.user,
-        memberships: (members ?? []).filter((m) => m.stores).map((m) => ({ member: m, store: m.stores! })),
+        memberships: (members ?? []).flatMap((m) => m.stores ? [{ member: m, store: m.stores }] : []),
         isAdmin: (roles ?? []).some((r) => r.role === "admin"),
       };
     },
@@ -76,7 +80,8 @@ function AppLayout() {
 
   const ctx = useMemo<StoreCtx | null>(() => {
     if (!data || data.memberships.length === 0) return null;
-    const pick = data.memberships.find((x) => x.store.id === selected) ?? data.memberships[0]!;
+    const pick = data.memberships.find((x) => x.store.id === selected) ?? data.memberships[0];
+    if (!pick) return null;
     const _m = pick.member, _s = pick.store;
     return {
       store: _s,
@@ -146,6 +151,7 @@ function Shell({ ctx }: { ctx: StoreCtx }) {
             <p className="truncate text-xs text-muted-foreground">{ROLE_LABEL[ctx.member.role]} · {ctx.email}</p>
           </div>
           {ctx.member.role === "owner" && <NotificationsBell storeId={ctx.store.id} userId={ctx.userId} />}
+          <AccountMenu email={ctx.email} />
         </header>
         <main className="px-4 pb-24 pt-6 lg:px-8 lg:pb-10">
           {blocked ? (
@@ -252,7 +258,8 @@ function Onboarding({ email }: { email: string }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+    <div className="relative flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="absolute right-4 top-4"><AccountMenu email={email} /></div>
       <form onSubmit={submit} className="w-full max-w-md rounded-2xl border bg-card p-8">
         <p className="text-xs font-semibold uppercase tracking-widest text-gold">Primeiro acesso</p>
         <h1 className="mt-2 text-2xl font-semibold">Crie sua loja</h1>
@@ -267,7 +274,14 @@ function Onboarding({ email }: { email: string }) {
         <button
           type="button"
           className="mt-3 w-full text-sm text-muted-foreground hover:underline"
-          onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/auth" }); }}
+          onClick={async () => {
+            try {
+              await endAccountSession(qc, () => supabase.auth.signOut({ scope: "local" }), () => {
+                localStorage.removeItem("mli.store");
+                sessionStorage.removeItem("mli.auth.redirect");
+              }, () => navigate({ to: "/auth", replace: true }));
+            } catch { toast.error("Não foi possível sair da conta. Tente novamente."); }
+          }}
         >
           Sair
         </button>
