@@ -14,4 +14,14 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+  it("allows an invitation route without passing through the authenticated gate", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const matches = router.matchRoutes("/convite/token-123");
+    expect(matches.at(-1)?.routeId).toBe("/convite/$token");
+    expect(matches.some((match) => match.routeId === "/_authenticated")).toBe(false);
+  });
+  it.each(["/app", "/admin"])("keeps %s behind the authentication gate", (path) => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes(path).some((match) => match.routeId === "/_authenticated")).toBe(true);
+  });
 });

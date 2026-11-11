@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { passwordLogin, safeAccountRedirect } from "@/lib/account-auth";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): { redirect?: string | undefined } => {
@@ -38,13 +39,16 @@ function AuthPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const dest = () => redirectTo ?? safeAccountRedirect(sessionStorage.getItem("mli.auth.redirect")) ?? "/app";
+  const { data: authenticatedUser } = useQuery({
+    queryKey: ["auth-user"],
+    queryFn: async () => (await supabase.auth.getUser()).data.user,
+  });
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: dest(), replace: true });
-    });
+    if (redirectTo) sessionStorage.setItem("mli.auth.redirect", redirectTo);
+    if (authenticatedUser) navigate({ to: dest(), replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate, redirectTo]);
+  }, [navigate, redirectTo, authenticatedUser]);
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
@@ -59,6 +63,7 @@ function AuthPage() {
   async function onSignup(e: FormEvent) {
     e.preventDefault();
     if (password.length < 8) { toast.error("A senha deve ter pelo menos 8 caracteres."); return; }
+    sessionStorage.setItem("mli.auth.redirect", dest());
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -110,7 +115,7 @@ function AuthPage() {
       <div className="flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <h1 className="text-2xl font-semibold">Bem-vindo</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Entre ou crie a conta da sua loja.</p>
+          <p className="mt-1 text-sm text-muted-foreground">{redirectTo?.startsWith("/convite/") ? "Entre ou crie sua conta para conferir e aceitar o convite." : "Entre ou crie a conta da sua loja."}</p>
           {notice && <div className="mt-6 rounded-lg border border-gold/40 bg-gold-soft p-4 text-sm">{notice}</div>}
           <Tabs value={tab} onValueChange={(v) => { setTab(v); setNotice(null); }} className="mt-6">
             <TabsList className="grid w-full grid-cols-2">

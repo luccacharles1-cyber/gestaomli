@@ -15,9 +15,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { buildInviteLink, isRestrictedPreview } from "@/lib/invite-link";
 
 export const Route = createFileRoute("/_authenticated/app/configuracoes")({
-  head: () => ({ meta: [{ title: "Configurações — MLI Gestão" }, { name: "description", content: "Dados da loja, equipe e permissões." }, { property: "og:title", content: "Configurações — MLI Gestão" }, { property: "og:description", content: "Dados da loja, equipe e permissões." }] }),
+  head: () => ({ meta: [{ title: "Configurações — MLI Gestão" }, { name: "description", content: "Dados da loja, equipe e permissões." }, { property: "og:title", content: "Configurações — MLI Gestão" }, { property: "og:description", content: "Dados da loja, equipe e permissões." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Settings,
 });
 
@@ -140,14 +141,16 @@ function Team() {
   const [lastLink, setLastLink] = useState<string | null>(null);
 
   function inviteLink(token: string) {
-    return `${window.location.origin}/convite/${token}`;
+    return buildInviteLink(token, window.location.origin, import.meta.env["VITE_PUBLIC_APP_URL"]);
   }
 
   async function copyLink(token: string) {
     const link = inviteLink(token);
-    try { await navigator.clipboard.writeText(link); } catch { /* clipboard indisponível */ }
     setLastLink(link);
-    toast.success("Link copiado.");
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Link copiado.");
+    } catch { toast.info("Copie o endereço exibido abaixo."); }
   }
 
   async function invite(e: FormEvent) {
@@ -262,6 +265,7 @@ function Team() {
             <div className="rounded-lg border border-gold/40 bg-gold-soft p-3 text-sm">
               <p className="font-medium">Link do convite (e-mail não enviado):</p>
               <p className="mt-1 break-all text-xs">{lastLink}</p>
+              {isRestrictedPreview(lastLink) && <p className="mt-2 text-xs">Este endereço é uma prévia restrita do Lovable. Convidados sem acesso ao projeto não conseguem abri-lo. Publique o aplicativo e copie o convite pelo site publicado.</p>}
             </div>
           )}
           {!!data?.invites.length && (
@@ -272,7 +276,7 @@ function Team() {
                   <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span>{i.email} · {ROLE_LABEL[i.role]} · <Badge variant={status === "pendente" ? "secondary" : "outline"}>{status}</Badge></span>
                     <div className="flex gap-1">
-                      {status !== "revogado" && i.token && <Button type="button" size="sm" variant="outline" onClick={() => copyLink(i.token!)}>Copiar link</Button>}
+                      {status !== "revogado" && i.token && <Button type="button" size="sm" variant="outline" onClick={() => { if (i.token) void copyLink(i.token); }}>Copiar link</Button>}
                       {status !== "revogado" && <Button type="button" size="sm" variant="outline" onClick={() => resend(i.id)}>Reenviar</Button>}
                       {status !== "revogado" && <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => revoke(i.id)}>Revogar</Button>}
                     </div>

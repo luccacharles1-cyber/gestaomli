@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_LABEL } from "@/lib/store-context";
 import { Button } from "@/components/ui/button";
+import { endAccountSession } from "@/lib/account-auth";
 
 export const Route = createFileRoute("/convite/$token")({
   head: () => ({
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/convite/$token")({
       { name: "description", content: "Aceite o convite para entrar na loja." },
       { property: "og:title", content: "Convite — MLI Gestão" },
       { property: "og:description", content: "Aceite o convite para entrar na loja." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -46,7 +49,7 @@ function InvitePage() {
   });
 
   const { data: invite, isLoading: loadingInvite } = useQuery({
-    queryKey: ["invite", token],
+    queryKey: ["invite", token, session?.id],
     enabled: !!session,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_invite_by_token", { _token: token });
@@ -58,19 +61,24 @@ function InvitePage() {
   async function accept() {
     if (busy) return;
     setBusy(true);
-    const { error } = await supabase.rpc("accept_invite", { _token: token });
+    const { data: storeId, error } = await supabase.rpc("accept_invite", { _token: token });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
+    if (storeId) localStorage.setItem("mli.store", storeId);
+    sessionStorage.removeItem("mli.auth.redirect");
     toast.success("Convite aceito. Bem-vindo à loja!");
     await qc.invalidateQueries({ queryKey: ["session-bootstrap"] });
     navigate({ to: "/app" });
   }
 
   async function switchAccount() {
-    await qc.cancelQueries();
-    qc.clear();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", search: { redirect: `/convite/${token}` }, replace: true });
+    try {
+      await endAccountSession(qc, () => supabase.auth.signOut({ scope: "local" }), () => {
+        localStorage.removeItem("mli.store");
+        sessionStorage.removeItem("mli.auth.recovery");
+        sessionStorage.setItem("mli.auth.redirect", `/convite/${token}`);
+      }, () => navigate({ to: "/auth", search: { redirect: `/convite/${token}` }, replace: true }));
+    } catch { toast.error("Não foi possível sair. Tente novamente."); }
   }
 
   let body: React.ReactNode;
@@ -97,10 +105,11 @@ function InvitePage() {
         <p className="mt-2 text-sm text-muted-foreground">
           Você foi convidado como <strong>{invite.role ? ROLE_LABEL[invite.role] : ""}</strong> com o e-mail <strong>{invite.email}</strong>.
         </p>
-        <Button className="mt-6 w-full" disabled={busy} onClick={accept}>{busy ? "Aceitando…" : "Aceitar convite"}</Button>
-        <button type="button" className="mt-3 w-full text-sm text-muted-foreground hover:underline" onClick={switchAccount}>
+        {!session.email_confirmed_at && <p className="mt-4 text-sm text-muted-foreground">Confirme sua conta pelo link enviado ao seu e-mail e volte a este convite. Você ainda não faz parte da loja.</p>}
+        <Button className="mt-6 w-full" disabled={busy || !session.email_confirmed_at} onClick={accept}>{busy ? "Aceitando…" : "Aceitar convite"}</Button>
+        <Button type="button" variant="link" className="mt-3 w-full text-muted-foreground" onClick={switchAccount}>
           Não é você? Entrar com outra conta
-        </button>
+        </Button>
       </>
     );
   } else if (invite.status === "other_email") {
