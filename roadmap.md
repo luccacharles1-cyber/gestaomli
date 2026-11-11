@@ -14,6 +14,11 @@
 - [ ] Attach externally issued XML/PDF invoices to sales in Documents and sale detail; private storage and server-authorized store linkage.
 - [ ] Verify receipt identity, pending balance and invoice read-back; report test limits.
 
+# Manual trade-ins and proposals
+- [ ] Allow authorized manual trade-ins without mandatory evaluation; keep IMEI, stock and financial rules.
+- [ ] Add evaluation/simulation modes with stock or existing catalog-model proposals, commercial copy and WhatsApp.
+- [ ] Verify manual trade sale, available-stock proposal and unavailable-model proposal.
+
 # Invitation access review
 - [x] Copy an existing invite from Team and compare fresh-browser app and hosted preview access.
 - [x] Preserve the public invitation and confirmation return; warn about restricted preview links and prefer a configured published origin.

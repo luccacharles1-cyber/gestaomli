@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const Route = createFileRoute("/_authenticated/app/vendas_/nova")({
   validateSearch: (s: Record<string, unknown>) => ({ device: typeof s["device"] === "string" ? s["device"] : undefined }),
-  head: () => ({ meta: [{ title: "Nova venda — MLI Gestão" }, { name: "description", content: "Registrar venda com troca e pagamentos combinados." }, { property: "og:title", content: "Nova venda — MLI Gestão" }, { property: "og:description", content: "Registrar venda com troca e pagamentos combinados." }] }),
+  head: () => ({ meta: [{ title: "Nova venda — MLI Gestão" }, { name: "description", content: "Registrar venda com troca e pagamentos combinados." }, { property: "og:title", content: "Nova venda — MLI Gestão" }, { property: "og:description", content: "Registrar venda com troca e pagamentos combinados." },{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}] }),
   component: NovaVenda,
 });
 
@@ -52,6 +52,7 @@ function NovaVenda() {
   });
 
   const [evaluationId, setEvaluationId] = useState("");
+  const [imeiError,setImeiError]=useState<string|null>(null);
   function pickEvaluation(id: string) {
     const e = data?.evaluations.find((x) => x.id === id);
     if (!e) return;
@@ -67,7 +68,7 @@ function NovaVenda() {
       const [c, d, ev] = await Promise.all([
         supabase.from("clients").select("id, name, whatsapp").eq("store_id", store.id).order("name"),
         supabase.from("devices").select("*").eq("store_id", store.id).in("status", ["disponivel", "reservado"]).order("model"),
-        supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).eq("status", "aprovada").order("created_at", { ascending: false }),
+        supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).is("sale_id", null).neq("status", "utilizada").order("created_at", { ascending: false }),
       ]);
       if (ev.error) throw ev.error;
       if (c.error) throw c.error;
@@ -120,9 +121,9 @@ function NovaVenda() {
       const imei1 = normalizeImei(trade.imei1);
       const imei2 = normalizeImei(trade.imei2);
       const imeiErr = validateImeiPair(imei1, imei2);
-      if (imeiErr) { toast.error(imeiErr); return; }
-      if (!finalClientId) { toast.error("Venda com usado na troca exige um cliente cadastrado com avaliação aprovada."); return; }
-      if (!evaluationId || !clientEvaluations.some((e) => e.id === evaluationId)) { toast.error("Selecione uma avaliação aprovada para o usado."); return; }
+      if (imeiErr) { setImeiError(imeiErr); return; }
+      setImeiError(null);
+      
       if (!trade.model.trim()) { toast.error("Informe o modelo do usado."); return; }
       if ((parseBRLToCents(trade.value) ?? 0) <= 0) { toast.error("Informe o valor acordado do usado."); return; }
       if (!finalClientId && !newClient.name.trim()) { toast.error("Venda com usado na troca exige cliente identificado."); return; }
@@ -142,7 +143,7 @@ function NovaVenda() {
 
       const battery = trade.battery_health ? Number(trade.battery_health) : null;
       const { data: saleId, error } = await supabase.rpc("complete_sale_evaluated", {
-        _evaluation_id: (hasTradeIn ? evaluationId : null) as string,
+        _evaluation_id: (hasTradeIn && evaluationId ? evaluationId : null) as unknown as string,
         _store_id: store.id,
         _client_id: finalClientId as string,
         _items: items.map((i) => ({ device_id: i.device.id, price: centsToDecimal(i.priceCents) })),
@@ -151,7 +152,7 @@ function NovaVenda() {
           .filter((p) => (parseBRLToCents(p.amount) ?? 0) > 0)
           .map((p) => ({
             method: p.method,
-            amount: centsToDecimal(parseBRLToCents(p.amount)!),
+            amount: centsToDecimal((parseBRLToCents(p.amount) ?? 0)),
             installments: p.installments ? Number(p.installments) : null,
           })),
         _trade_in: hasTradeIn
@@ -166,7 +167,7 @@ function NovaVenda() {
               conservation: trade.conservation || null,
               battery_health: battery,
               defects: trade.defects || null,
-              agreed_value: centsToDecimal(parseBRLToCents(trade.value)!),
+              agreed_value: centsToDecimal((parseBRLToCents(trade.value) ?? 0)),
             }
           : null,
         _notes: (notes.trim() || null) as string,
@@ -265,9 +266,9 @@ function NovaVenda() {
           </label>
           {hasTradeIn && (
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2"><Label>Avaliação aprovada *</Label>
+              <div className="space-y-1.5 sm:col-span-2"><Label>Usar dados de uma avaliação (opcional)</Label>
                 <Select value={evaluationId} onValueChange={pickEvaluation}>
-                  <SelectTrigger><SelectValue placeholder={!clientId ? "Selecione o cliente primeiro" : clientEvaluations.length ? "Escolha a avaliação" : "Nenhuma avaliação aprovada para este cliente"} /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={!clientId ? "Selecione o cliente primeiro" : clientEvaluations.length ? "Escolha a avaliação" : "Nenhuma avaliação para este cliente"} /></SelectTrigger>
                   <SelectContent>{clientEvaluations.map((e) => <SelectItem key={e.id} value={e.id}>{e.model} {e.storage} — {formatCents(toCents(e.offered_value))}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
@@ -279,9 +280,10 @@ function NovaVenda() {
                 </Select>
               </div>
               <div className="space-y-1.5"><Label>Cor</Label><Input value={trade.color} onChange={(e) => setTrade({ ...trade, color: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>Valor acordado (R$) *</Label><Input inputMode="decimal" value={trade.value} readOnly placeholder="Vem da avaliação" /></div>
-              <div className="space-y-1.5"><Label>IMEI 1</Label><Input inputMode="numeric" maxLength={15} value={trade.imei1} onChange={(e) => setTrade({ ...trade, imei1: e.target.value })} /></div>
-              <div className="space-y-1.5"><Label>IMEI 2</Label><Input inputMode="numeric" maxLength={15} value={trade.imei2} onChange={(e) => setTrade({ ...trade, imei2: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label>Valor acordado (R$) *</Label><Input inputMode="decimal" value={trade.value} onChange={(e)=>setTrade({...trade,value:e.target.value})} aria-label="Valor acordado (R$)" /></div>
+              <div className="space-y-1.5"><Label htmlFor="trade-imei1">IMEI 1</Label><Input id="trade-imei1" aria-invalid={!!imeiError} aria-describedby="trade-imei-error" inputMode="numeric" maxLength={15} value={trade.imei1} onChange={(e) => setTrade({ ...trade, imei1: e.target.value })} /></div>
+              <div className="space-y-1.5"><Label htmlFor="trade-imei2">IMEI 2</Label><Input id="trade-imei2" aria-invalid={!!imeiError} aria-describedby="trade-imei-error" inputMode="numeric" maxLength={15} value={trade.imei2} onChange={(e) => setTrade({ ...trade, imei2: e.target.value })} /></div>
+              {imeiError && <p id="trade-imei-error" role="alert" className="text-sm text-destructive sm:col-span-2">{imeiError}</p>}
               <div className="space-y-1.5"><Label>Número de série</Label><Input value={trade.serial_number} onChange={(e) => setTrade({ ...trade, serial_number: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Bateria (%)</Label><Input inputMode="numeric" value={trade.battery_health} onChange={(e) => setTrade({ ...trade, battery_health: e.target.value })} /></div>
               <div className="space-y-1.5"><Label>Conservação</Label><Input value={trade.conservation} onChange={(e) => setTrade({ ...trade, conservation: e.target.value })} /></div>

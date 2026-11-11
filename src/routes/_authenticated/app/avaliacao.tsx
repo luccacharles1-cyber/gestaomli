@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
 import { ADJ_KINDS, ADJ_LABEL, EVAL_STATUS_LABEL, needsApproval, suggestedCents, type AdjKind } from "@/lib/crm";
 import { centsToDecimal, formatBRL, formatCents, parseBRLToCents } from "@/lib/money";
+import { TradeSimulation } from "@/components/app/TradeSimulation";
 import { STORAGE_OPTIONS } from "@/lib/devices";
 import { formatDateTime } from "@/lib/format";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -18,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/app/avaliacao")({
-  head: () => ({ meta: [{ title: "Avaliação de usados — MLI Gestão" }, { name: "description", content: "Tabela própria de avaliação com ajustes por bateria, conservação, peças e defeitos e limites de aprovação." }, { property: "og:title", content: "Avaliação de usados — MLI Gestão" }, { property: "og:description", content: "Tabela própria de avaliação com ajustes e aprovação." }] }),
+  head: () => ({ meta: [{ title: "Avaliação de usados — MLI Gestão" }, { name: "description", content: "Tabela própria de avaliação com ajustes por bateria, conservação, peças e defeitos e limites de aprovação." }, { property: "og:title", content: "Avaliação de usados — MLI Gestão" }, { property: "og:description", content: "Tabela própria de avaliação com ajustes e aprovação." },{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}] }),
   component: Avaliacao,
 });
 
@@ -37,12 +38,13 @@ function Avaliacao() {
         supabase.from("clients").select("id, name").eq("store_id", store.id).order("name"),
       ]);
       for (const r of [p, a, e, c]) if (r.error) throw r.error;
-      return { prices: p.data!, adjs: a.data!, evals: e.data!, clients: c.data! };
+      return { prices: p.data ?? [], adjs: a.data ?? [], evals: e.data ?? [], clients: c.data ?? [] };
     },
   });
   const refresh = () => qc.invalidateQueries({ queryKey: key });
 
   const [form, setForm] = useState({ model: "", storage: "", client_id: "", offered: "", notes: "" });
+  const [mode,setMode]=useState("evaluate");
   const [picked, setPicked] = useState<string[]>([]);
   const [price, setPrice] = useState({ model: "", storage: "", value: "" });
   const [adj, setAdj] = useState({ kind: "bateria" as AdjKind, label: "", amount: "" });
@@ -95,6 +97,7 @@ function Avaliacao() {
         <TabsList><TabsTrigger value="avaliar">Avaliar</TabsTrigger><TabsTrigger value="historico">Avaliações</TabsTrigger><TabsTrigger value="tabela">Tabela da loja</TabsTrigger></TabsList>
 
         <TabsContent value="avaliar" className="mt-4">
+          <Tabs value={mode} onValueChange={setMode} className="mb-4"><TabsList><TabsTrigger value="evaluate">Avaliar usado</TabsTrigger><TabsTrigger value="simulate">Simular troca</TabsTrigger></TabsList></Tabs>
           <section className="grid max-w-3xl gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
             <div className="space-y-1.5"><Label>Modelo *</Label><Input list="eval-models" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /><datalist id="eval-models">{models.map((m) => <option key={m} value={m} />)}</datalist></div>
             <div className="space-y-1.5"><Label>Armazenamento</Label>
@@ -119,8 +122,8 @@ function Avaliacao() {
             </div>
             <div className="space-y-1.5"><Label>Valor oferecido (R$) *</Label><Input inputMode="decimal" value={form.offered} onChange={(e) => setForm({ ...form, offered: e.target.value })} /></div>
             <div className="space-y-1.5"><Label>Observações</Label><Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-            {offered != null && needsApproval(sug, offered) && <p className="text-sm text-warning-foreground sm:col-span-2">{perms.approveEvaluations ? "Fora do sugerido: será aprovada por você." : "Fora do sugerido: ficará aguardando aprovação."}</p>}
-            <Button className="sm:col-span-2" onClick={evaluate} disabled={!perms.registerSales}>Registrar avaliação</Button>
+            {mode==="evaluate" && offered != null && needsApproval(sug, offered) && <p className="text-sm text-warning-foreground sm:col-span-2">{perms.approveEvaluations ? "Fora do sugerido: será aprovada por você." : "Fora do sugerido: ficará aguardando aprovação."}</p>}
+            {mode==="evaluate"?<Button className="sm:col-span-2" onClick={evaluate} disabled={!perms.registerSales}>Registrar avaliação</Button>:<div className="sm:col-span-2"><TradeSimulation used={[form.model,form.storage].filter(Boolean).join(" ")} offered={offered} clientId={form.client_id}/></div>}
           </section>
         </TabsContent>
 
