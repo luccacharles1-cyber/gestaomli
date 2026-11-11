@@ -3,6 +3,12 @@
 - [ ] Verify commercial-only payloads, selected photos, clipboard and desktop/mobile layout.
 - [ ] Report actual WhatsApp/device delivery verification limits and stop.
 
+# Sales report
+- [ ] Build a real-data sales report with date/seller/model filters, store-timezone dates, summary, sale details and seller totals.
+- [ ] Reuse dashboard revenue/profit definitions; distinguish trade-ins, cash received and pending balances; flag missing costs.
+- [ ] Enforce existing store, sales, cost and finance permissions in server queries.
+- [ ] Verify cash, trade-in, partial credit and cancelled sales, dashboard parity, and seller restrictions; report limitations.
+
 # Invitation access review
 - [x] Copy an existing invite from Team and compare fresh-browser app and hosted preview access.
 - [x] Preserve the public invitation and confirmation return; warn about restricted preview links and prefer a configured published origin.
