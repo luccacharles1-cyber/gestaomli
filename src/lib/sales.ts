@@ -48,9 +48,15 @@ export function saleTotals(
 
 /** Client-side pre-validation mirroring the server rules (server is authoritative). */
 export function validateSaleTotals(t: SaleTotals): string | null {
-  if (t.itemsCents <= 0) return "A venda precisa de ao menos um aparelho.";
+  if (t.itemsCents <= 0) return "A venda precisa de ao menos um item válido.";
   if (t.discountCents < 0) return "Desconto inválido.";
   if (t.totalCents < 0) return "O desconto não pode ser maior que o total.";
   if (t.balanceCents < 0) return "Pagamentos e troca excedem o total da venda.";
+  return null;
+}
+
+export function validateProductQuantity(quantity: number, available: number): string | null {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) return "Quantidade deve ser inteira e maior que zero.";
+  if (quantity > available) return "Quantidade acima do saldo disponível.";
   return null;
 }

@@ -4,6 +4,7 @@ const sale:ReportSale={id:"s",created_at:"2026-11-11T15:00:00Z",receipt_number:1
 const item:ReportItem={sale_id:"s",device_id:"d",model:"iPhone",storage:"128 GB",cost:2500};
 const entry:ReportEntry={sale_id:"s",contract_id:"c",method:"pix",kind:"entrada",status:"pago",paid_amount:500,is_refund:false,reversal_of:null};
 describe("sales report",()=>{
+ it("includes two R$80 chargers in revenue and quantity",()=>{expect(salesReport([{...sale,total:160,amount_received:160}],[{...item,model:"Carregador",quantity:2,cost:30}],[],[],true,true).summary).toMatchObject({revenue:16000,devices:2,profit:10000});});
  it("counts a cash sale using dashboard revenue and gross profit definitions",()=>{expect(salesReport([sale],[item],[],[],true,true).summary).toEqual({revenue:400000,sales:1,devices:1,ticket:400000,profit:150000,margin:37.5,incomplete:0});});
  it("keeps R$4000 sale, R$1500 trade, R$2500 received and zero pending separate",()=>{expect(salesReport([{...sale,trade_in_value:1500,amount_received:2500}],[item],[],[],true,true).rows[0]).toMatchObject({revenue:400000,tradeIn:150000,received:250000,pending:0});});
  it("updates credit receipts without new revenue or double counting regular receipts",()=>{expect(salesReport([{...sale,amount_received:1000,balance:3000}],[item],[entry,{...entry,contract_id:null,paid_amount:1000}],[],true,true).rows[0]).toMatchObject({revenue:400000,received:150000,pending:250000});});

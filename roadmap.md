@@ -1,3 +1,8 @@
+# Product sales
+- [x] Include existing quantity-stock products in new sales, receipts and reports.
+- [x] Validate atomic stock deduction, duplicate confirmation and single cancellation restoration with isolated fixtures.
+- Verified authenticated owner in isolated temporary store: existing 5-unit charger searched and sold 2 × R$80 = R$160; stock 3, receipt and financial entry R$160; report 2 units / R$160 / R$100 gross profit. Mixed sale R$1160 completed; cancellation restored 5 products and available device. Empty, fractional, zero, excessive quantities and unauthorized store rejected. Concurrent same-token calls deducted once; competing stock calls rejected one sale. Temporary store and all fixture rows removed. Desktop and 390px mobile checked; 80 tests passed. Seller-specific and physical printing not exercised in this request.
+
 # Device photo sharing
 - [x] Include independent commercial description and sale price choices, selected by default, with preview, explicit copy and photo download alternatives.
 - [x] Verify commercial-only payloads, selected photos, clipboard and desktop/mobile layout.

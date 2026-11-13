@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, Search, Trash2 } from "lucide-react";
@@ -8,6 +8,8 @@ import { useStore } from "@/lib/store-context";
 import { normalizeImei, validateImeiPair } from "@/lib/imei";
 import { centsToDecimal, centsToInput, formatCents, parseBRLToCents, toCents } from "@/lib/money";
 import { PAYMENT_LABEL, saleTotals, validateSaleTotals, type PaymentMethod } from "@/lib/sales";
+import type { Database } from "@/integrations/supabase/types";
+import { validateProductQuantity } from "@/lib/sales";
 import { STATUS_LABEL, STORAGE_OPTIONS, type Device } from "@/lib/devices";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,11 +27,14 @@ export const Route = createFileRoute("/_authenticated/app/vendas_/nova")({
 
 type Client = { id: string; name: string; whatsapp: string | null };
 type Item = { device: Device; priceCents: number };
+type Product = Database["public"]["Tables"]["accessories"]["Row"];
+type ProductItem = { product: Product; quantity: string; priceCents: number };
 type Payment = { method: PaymentMethod; amount: string; installments: string };
 
 function NovaVenda() {
   const { store, perms } = useStore();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { device: preselect } = Route.useSearch();
   // Idempotency token: generated once per form mount; the server returns the
   // original sale if the same token is submitted twice (double click / retry).
@@ -42,6 +47,7 @@ function NovaVenda() {
 
   const [itemSearch, setItemSearch] = useState("");
   const [items, setItems] = useState<Item[]>([]);
+  const [products, setProducts] = useState<ProductItem[]>([]);
   const [discount, setDiscount] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -62,18 +68,20 @@ function NovaVenda() {
 
   const [payments, setPayments] = useState<Payment[]>([{ method: "pix", amount: "", installments: "" }]);
 
-  const { data } = useQuery({
+  const { data, error: searchError } = useQuery({
     queryKey: ["sale-form-data", store.id],
     queryFn: async () => {
-      const [c, d, ev] = await Promise.all([
+      const [c, d, ev, a] = await Promise.all([
         supabase.from("clients").select("id, name, whatsapp").eq("store_id", store.id).order("name"),
         supabase.from("devices").select("*").eq("store_id", store.id).in("status", ["disponivel", "reservado"]).order("model"),
         supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).is("sale_id", null).eq("archived", false).neq("status", "utilizada").order("created_at", { ascending: false }),
+        supabase.from("accessories").select("*").eq("store_id", store.id).gt("quantity", 0).order("name"),
       ]);
+      if (a.error) throw a.error;
       if (ev.error) throw ev.error;
       if (c.error) throw c.error;
       if (d.error) throw d.error;
-      return { clients: (c.data ?? []) as Client[], devices: (d.data ?? []) as Device[], evaluations: ev.data ?? [] };
+      return { clients: (c.data ?? []) as Client[], devices: (d.data ?? []) as Device[], evaluations: ev.data ?? [], products: a.data ?? [] };
     },
   });
   const clientEvaluations = (data?.evaluations ?? []).filter((e) => clientId && e.client_id === clientId);
@@ -95,9 +103,15 @@ function NovaVenda() {
       .slice(0, 8);
   }, [data, itemSearch, items]);
 
+  const availableProducts = useMemo(() => {
+    const term = itemSearch.trim().toLowerCase();
+    return (data?.products ?? []).filter(p => !products.some(i => i.product.id === p.id))
+      .filter(p => !term || [p.name, p.sku].filter(Boolean).join(" ").toLowerCase().includes(term)).slice(0, 8);
+  }, [data, itemSearch, products]);
+  const productError = products.map(p => validateProductQuantity(Number(p.quantity), p.product.quantity)).find(Boolean);
   const paymentCents = payments.map((p) => parseBRLToCents(p.amount) ?? 0);
   const totals = saleTotals(
-    items.map((i) => i.priceCents),
+    [...items.map((i) => i.priceCents), ...products.map(p => p.priceCents * (Number(p.quantity) || 0))],
     parseBRLToCents(discount) ?? 0,
     hasTradeIn ? (parseBRLToCents(trade.value) ?? 0) : 0,
     paymentCents,
@@ -109,9 +123,10 @@ function NovaVenda() {
 
   async function submit() {
     if (busy) return;
+    if (productError) { toast.error(productError); return; }
     const err = validateSaleTotals(totals);
     if (err) { toast.error(err); return; }
-    if (items.some((i) => i.priceCents <= 0)) { toast.error("Informe o preço de cada aparelho."); return; }
+    if (items.some((i) => i.priceCents <= 0) || products.some(p => p.priceCents <= 0)) { toast.error("Informe o preço de cada item."); return; }
     if (totals.discountCents > 0 && !perms.giveDiscounts) { toast.error("Você não tem permissão para conceder desconto."); return; }
     if (payments.some((p) => p.amount.trim() && parseBRLToCents(p.amount) == null)) { toast.error("Valor de pagamento inválido."); return; }
 
@@ -146,7 +161,7 @@ function NovaVenda() {
         _evaluation_id: (hasTradeIn && evaluationId ? evaluationId : null) as unknown as string,
         _store_id: store.id,
         _client_id: finalClientId as string,
-        _items: items.map((i) => ({ device_id: i.device.id, price: centsToDecimal(i.priceCents) })),
+        _items: [...items.map((i) => ({ device_id: i.device.id, price: centsToDecimal(i.priceCents) })), ...products.map(p => ({ accessory_id: p.product.id, quantity: Number(p.quantity), price: centsToDecimal(p.priceCents) }))],
         _discount: totals.discountCents / 100,
         _payments: payments
           .filter((p) => (parseBRLToCents(p.amount) ?? 0) > 0)
@@ -174,6 +189,7 @@ function NovaVenda() {
         _client_token: clientToken,
       });
       if (error) throw error;
+      await qc.invalidateQueries();
       toast.success("Venda registrada.");
       navigate({ to: "/app/vendas/$id", params: { id: saleId as string } });
     } catch (e) {
@@ -217,7 +233,7 @@ function NovaVenda() {
         </section>
 
         <section className="rounded-xl border bg-card p-5">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Aparelhos</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Itens da venda</h2>
           {items.length > 0 && (
             <ul className="mb-4 space-y-2">
               {items.map((i) => (
@@ -241,19 +257,28 @@ function NovaVenda() {
               ))}
             </ul>
           )}
+          {products.length > 0 && <ul className="mb-4 space-y-2">{products.map(p => <li key={p.product.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+            <div className="min-w-0 basis-full sm:flex-1 sm:basis-0"><p className="break-words font-medium">{p.product.name}</p><p className="text-xs text-muted-foreground">Saldo disponível: {p.product.quantity} · Unitário: {formatCents(p.priceCents)}</p></div>
+            <div className="space-y-1"><Label htmlFor={`qty-${p.product.id}`}>Quantidade</Label><Input id={`qty-${p.product.id}`} className="w-24" type="number" min="1" max={p.product.quantity} step="1" value={p.quantity} onChange={e => setProducts(prev => prev.map(i => i.product.id === p.product.id ? {...i, quantity: e.target.value} : i))} /></div>
+            <span className="text-sm font-medium">Subtotal: {formatCents(p.priceCents * (Number(p.quantity) || 0))}</span>
+            <Button type="button" size="icon" variant="ghost" aria-label={`Remover ${p.product.name}`} onClick={() => setProducts(prev => prev.filter(i => i.product.id !== p.product.id))}><Trash2 className="h-4 w-4" /></Button>
+          </li>)}</ul>}
+          {productError && <p role="alert" className="mb-3 text-sm text-destructive">{productError}</p>}
+          {searchError && <p role="alert" className="text-sm text-destructive">Não foi possível carregar os itens do estoque.</p>}
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Buscar aparelho disponível por modelo, IMEI ou código" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+            <Input className="pl-9" placeholder="Buscar aparelho ou produto por nome, modelo, IMEI ou código" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
           </div>
           {itemSearch.trim() && (
             <ul className="mt-2 divide-y rounded-lg border">
-              {available.length === 0 && <li className="p-3 text-sm text-muted-foreground">Nenhum aparelho disponível encontrado.</li>}
+              {available.length === 0 && availableProducts.length === 0 && <li className="p-3 text-sm text-muted-foreground">Nenhum item com saldo disponível encontrado.</li>}
+              {availableProducts.map(p => <li key={p.id}><Button type="button" variant="ghost" className="flex h-auto w-full justify-between gap-2 whitespace-normal rounded-none p-3 text-left" onClick={() => {setProducts(prev => [...prev, {product:p, quantity:"1", priceCents:toCents(p.sale_price)}]); setItemSearch("");}} disabled={p.sale_price == null || p.sale_price <= 0}><span className="min-w-0 break-words">{p.name}<span className="block text-xs text-muted-foreground">Saldo disponível: {p.quantity}</span></span><span className="shrink-0">{p.sale_price != null ? formatCents(toCents(p.sale_price)) : "Sem preço de venda"}</span></Button></li>)}
               {available.map((d) => (
                 <li key={d.id}>
-                  <button type="button" className="flex w-full items-center justify-between gap-2 p-3 text-left text-sm hover:bg-muted" onClick={() => { setItems((p) => [...p, { device: d, priceCents: toCents(d.sale_price) }]); setItemSearch(""); }}>
+                  <Button variant="ghost" type="button" className="flex h-auto w-full items-center justify-between gap-2 whitespace-normal rounded-none p-3 text-left text-sm" onClick={() => { setItems((p) => [...p, { device: d, priceCents: toCents(d.sale_price) }]); setItemSearch(""); }}>
                     <span>{d.model} {d.storage} {d.color && `· ${d.color}`} <Badge variant="secondary" className="ml-1">{STATUS_LABEL[d.status]}</Badge></span>
                     <span className="font-medium">{d.sale_price != null ? formatCents(toCents(d.sale_price)) : "Sem preço"}</span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -323,7 +348,7 @@ function NovaVenda() {
         <section className="rounded-xl border bg-card p-5">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Resumo</h2>
           <dl className="space-y-1 text-sm">
-            <div className="flex justify-between"><dt>Aparelhos</dt><dd>{formatCents(totals.itemsCents)}</dd></div>
+            <div className="flex justify-between"><dt>Itens da venda</dt><dd>{formatCents(totals.itemsCents)}</dd></div>
             {totals.discountCents > 0 && <div className="flex justify-between"><dt>Desconto</dt><dd>-{formatCents(totals.discountCents)}</dd></div>}
             <div className="flex justify-between font-semibold"><dt>Total da venda (faturamento)</dt><dd>{formatCents(totals.totalCents)}</dd></div>
             {totals.tradeInCents > 0 && <div className="flex justify-between"><dt>Usado na troca (aquisição, não é desconto)</dt><dd>-{formatCents(totals.tradeInCents)}</dd></div>}
@@ -334,7 +359,7 @@ function NovaVenda() {
             </div>
           </dl>
           <div className="sticky bottom-16 mt-6 flex justify-end lg:bottom-0">
-            <Button size="lg" onClick={submit} disabled={busy || items.length === 0}>
+            <Button size="lg" onClick={submit} disabled={busy || (items.length === 0 && products.length === 0) || !!productError}>
               {busy ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" />Registrando…</> : "Confirmar venda"}
             </Button>
           </div>

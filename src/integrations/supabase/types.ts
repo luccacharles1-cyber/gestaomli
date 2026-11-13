@@ -1621,6 +1621,64 @@ export type Database = {
           },
         ]
       }
+      sale_product_items: {
+        Row: {
+          accessory_id: string
+          created_at: string
+          id: string
+          name: string
+          quantity: number
+          sale_id: string
+          store_id: string
+          subtotal: number | null
+          unit_price: number
+        }
+        Insert: {
+          accessory_id: string
+          created_at?: string
+          id?: string
+          name: string
+          quantity: number
+          sale_id: string
+          store_id: string
+          subtotal?: number | null
+          unit_price: number
+        }
+        Update: {
+          accessory_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number
+          sale_id?: string
+          store_id?: string
+          subtotal?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_product_items_accessory_id_fkey"
+            columns: ["accessory_id"]
+            isOneToOne: false
+            referencedRelation: "accessories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_product_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_product_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_trade_ins: {
         Row: {
           agreed_value: number

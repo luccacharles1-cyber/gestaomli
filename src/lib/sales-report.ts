@@ -1,8 +1,8 @@
-import { toCents } from "./money";
+import { formatBRL, toCents } from "./money";
 import { TZ } from "./format";
 
 export type ReportSale = { id: string; created_at: string; receipt_number: number | null; seller_id: string | null; status: string; total: number; trade_in_value: number; amount_received: number; balance: number };
-export type ReportItem = { sale_id: string; device_id: string; model: string; storage: string | null; cost: number | null };
+export type ReportItem = { sale_id: string; device_id: string; model: string; storage: string | null; cost: number | null; quantity?: number; unitPrice?: number; subtotal?: number };
 export type ReportEntry = { sale_id: string | null; contract_id: string | null; method: string | null; kind: string; status: string; paid_amount: number; is_refund: boolean; reversal_of: string | null };
 export type ReportPayment = { sale_id: string; method: string; amount: number };
 
@@ -28,7 +28,7 @@ export function salesReport(sales: ReportSale[], items: ReportItem[], entries: R
     const active = s.status === "concluida";
     const revenue = active ? toCents(s.total) : 0;
     const missingCosts = costsAllowed && active ? devices.filter(i => i.cost == null).map(i => `${i.model}${i.storage ? ` ${i.storage}` : ""}`) : [];
-    return { id:s.id, date:s.created_at, number:s.receipt_number, sellerId:s.seller_id, status:s.status, devices:devices.map(i => `${i.model}${i.storage ? ` ${i.storage}` : ""}`), count:active ? devices.length : 0, revenue, tradeIn:toCents(s.trade_in_value), received:financeAllowed ? toCents(s.amount_received) + creditPaid - cardAccepted + cardPaid - refunded : null, pending:financeAllowed ? (active ? Math.max(0,toCents(s.balance) - creditPaid) : 0) : null, profit:costsAllowed && active ? revenue - devices.reduce((sum,i) => sum + toCents(i.cost),0) : null, missingCosts };
+    return { id:s.id, date:s.created_at, number:s.receipt_number, sellerId:s.seller_id, status:s.status, devices:devices.map(i => `${i.quantity ? `${i.quantity}x ` : ""}${i.model}${i.storage ? ` ${i.storage}` : ""}${i.unitPrice != null ? ` · ${formatBRL(i.unitPrice)} un. · Subtotal: ${formatBRL(i.subtotal ?? 0)}` : ""}`), count:active ? devices.reduce((sum,i)=>sum+(i.quantity ?? 1),0) : 0, revenue, tradeIn:toCents(s.trade_in_value), received:financeAllowed ? toCents(s.amount_received) + creditPaid - cardAccepted + cardPaid - refunded : null, pending:financeAllowed ? (active ? Math.max(0,toCents(s.balance) - creditPaid) : 0) : null, profit:costsAllowed && active ? revenue - devices.reduce((sum,i) => sum + toCents(i.cost) * (i.quantity ?? 1),0) : null, missingCosts };
   });
   const completed = rows.filter(r => r.status === "concluida");
   const revenue = completed.reduce((sum,r) => sum+r.revenue,0);

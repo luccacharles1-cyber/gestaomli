@@ -49,7 +49,7 @@ function VendaPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const [s, items, pays, trade, events, entries, contract, accounts, evaluations] = await Promise.all([
+      const [s, items, pays, trade, events, entries, contract, accounts, products, evaluations] = await Promise.all([
         supabase.from("sales").select("*, clients(name, document, whatsapp)").eq("id", id).eq("store_id", store.id).maybeSingle(),
         supabase.from("sale_items").select("*, devices(model, storage, color, imei1, imei2, condition)").eq("sale_id", id),
         supabase.from("sale_payments").select("*").eq("sale_id", id).order("created_at"),
@@ -58,12 +58,14 @@ function VendaPage() {
         perms.viewFinance ? supabase.from("financial_entries").select("*").eq("sale_id", id).order("created_at") : Promise.resolve({ data: [] }),
         perms.viewFinance ? supabase.from("credit_contracts").select("*, credit_installments(*)").eq("sale_id", id).maybeSingle() : Promise.resolve({ data: null }),
         perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id).eq("active", true) : Promise.resolve({ data: [] }),
+        supabase.from("sale_product_items").select("*").eq("store_id", store.id).eq("sale_id", id),
         supabase.from("evaluations").select("*").eq("store_id",store.id).eq("sale_id",id),
       ]);
+      if (products.error) throw products.error;
       if (s.error) throw s.error;
       if (evaluations.error) throw evaluations.error;
       return {
-        sale: s.data, items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [],
+        sale: s.data, products: products.data ?? [], items: items.data ?? [], payments: pays.data ?? [], tradeIns: trade.data ?? [], events: events.data ?? [],
         entries: (entries.data ?? []) as FinancialEntry[],
         contract: (contract.data ?? null) as (CreditContract & { credit_installments: CreditInstallment[] }) | null,
         accounts: (accounts.data ?? []) as FinancialAccount[],
@@ -78,11 +80,11 @@ function VendaPage() {
     const { error } = await supabase.rpc("cancel_sale", { _sale_id: id, _reason: reason });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Venda cancelada. Os aparelhos voltaram ao estoque e o usado foi marcado como devolvido ao cliente.");
+    toast.success("Venda cancelada. Itens devolvidos ao estoque; eventual usado marcado como devolvido ao cliente.");
     setCancelOpen(false);
     qc.invalidateQueries({ queryKey: key });
     qc.invalidateQueries({ queryKey: ["sales"] });
-    qc.invalidateQueries({ queryKey: ["devices"] });
+    qc.invalidateQueries();
   }
 
   if (isLoading) return <Skeleton className="h-96 rounded-xl" />;
@@ -145,8 +147,9 @@ function VendaPage() {
 
       <div className="grid gap-4 md:grid-cols-2 print:hidden">
         <section className="rounded-xl border bg-card p-4 text-sm">
-          <p className="mb-2 font-semibold">Aparelhos vendidos</p>
+          <p className="mb-2 font-semibold">Itens vendidos</p>
           <ul className="space-y-2">
+            {data.products.map(p => <li key={p.id} className="flex items-start justify-between gap-2"><span className="min-w-0"><span className="break-words font-medium">{p.name}</span><span className="block text-xs text-muted-foreground">{p.quantity} × {formatBRL(p.unit_price)}</span></span><span className="shrink-0">{formatBRL(p.subtotal)}</span></li>)}
             {data.items.map((i) => (
               <li key={i.id} className="flex items-start justify-between gap-2">
                 <span>
@@ -283,7 +286,7 @@ function VendaPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>Cancelar venda nº {s.receipt_number}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Os aparelhos voltam ao estoque como disponíveis e o usado da troca é marcado como devolvido ao cliente.
+            As quantidades dos produtos voltam ao estoque, os aparelhos ficam disponíveis e o usado da troca é marcado como devolvido ao cliente.
             Recebíveis em aberto são cancelados e o valor recebido fica registrado como reembolso pendente — a devolução do dinheiro é registrada à parte.
             A venda e o recibo originais são preservados no histórico.
           </p>

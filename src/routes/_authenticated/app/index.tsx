@@ -14,7 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { todayISO } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/app/")({
-  head: () => ({ meta: [{ title: "Início — MLI Gestão" }, { name: "description", content: "Resumo da sua loja." }, { property: "og:title", content: "Início — MLI Gestão" }, { property: "og:description", content: "Resumo da sua loja." }] }),
+  head: () => ({ meta: [{ title: "Início — MLI Gestão" }, { name: "description", content: "Resumo da sua loja." }, { property: "og:title", content: "Início — MLI Gestão" }, { property: "og:description", content: "Resumo da sua loja." },{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}] }),
   component: Dashboard,
 });
 
@@ -37,7 +37,7 @@ function Dashboard() {
   const { data } = useQuery({
     queryKey: ["dashboard", store.id, perms.viewCosts, range.gte, range.lte],
     queryFn: async () => {
-      const [devices, photos, costs, accessories, accCosts, members, highlights, sales, soldItems, finAccounts, finEntries, finInstallments] = await Promise.all([
+      const [devices, photos, costs, accessories, accCosts, members, highlights, sales, soldItems, finAccounts, finEntries, finInstallments, soldProducts] = await Promise.all([
         supabase.from("devices").select("id, status").eq("store_id", store.id),
         supabase.from("device_photos").select("device_id").eq("store_id", store.id),
         perms.viewCosts ? supabase.from("device_costs").select("device_id, total_cost").eq("store_id", store.id) : Promise.resolve({ data: [] }),
@@ -52,6 +52,7 @@ function Dashboard() {
         perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id) : Promise.resolve({ data: [] }),
         perms.viewFinance ? supabase.from("financial_entries").select("kind, status, amount, paid_amount, account_id, due_date, competence_date, paid_at, is_transfer, is_equity, contract_id").eq("store_id", store.id) : Promise.resolve({ data: [] }),
         perms.viewFinance ? supabase.from("credit_installments").select("amount, paid_amount, due_date, status, credit_contracts!inner(store_id, status)").eq("store_id", store.id).eq("credit_contracts.status", "ativo") : Promise.resolve({ data: [] }),
+        perms.viewCosts ? supabase.from("sale_product_items").select("accessory_id, quantity, sales!inner(status,created_at)").eq("store_id",store.id).eq("sales.status","concluida").gte("sales.created_at",range.gte).lte("sales.created_at",range.lte) : Promise.resolve({data:[]}),
       ]);
       const costMap = new Map((costs.data ?? []).map((c) => [c.device_id, c.total_cost]));
       const accMap = new Map((accCosts.data ?? []).map((c) => [c.accessory_id, c.unit_cost]));
@@ -74,7 +75,8 @@ function Dashboard() {
         sales: sales.data ?? [],
         grossProfit: perms.viewCosts
           ? (sales.data ?? []).reduce((acc, s) => acc + toCents(s.total), 0) -
-            (soldItems.data ?? []).reduce((acc, i) => acc + toCents(costMap.get(i.device_id) ?? null), 0)
+            (soldItems.data ?? []).reduce((acc, i) => acc + toCents(costMap.get(i.device_id) ?? null), 0) -
+            (soldProducts.data ?? []).reduce((acc, i) => acc + toCents(accMap.get(i.accessory_id) ?? null) * i.quantity, 0)
           : null,
         finAccounts: (finAccounts.data ?? []) as FinancialAccount[],
         finEntries: (finEntries.data ?? []) as FinancialEntry[],
