@@ -16,7 +16,10 @@ export type Database = {
     Tables: {
       accessories: {
         Row: {
+          archived: boolean
+          category: string | null
           created_at: string
+          description: string | null
           id: string
           name: string
           quantity: number
@@ -25,7 +28,10 @@ export type Database = {
           store_id: string
         }
         Insert: {
+          archived?: boolean
+          category?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           name: string
           quantity?: number
@@ -34,7 +40,10 @@ export type Database = {
           store_id: string
         }
         Update: {
+          archived?: boolean
+          category?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           name?: string
           quantity?: number
@@ -78,6 +87,67 @@ export type Database = {
           },
           {
             foreignKeyName: "accessory_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accessory_movements: {
+        Row: {
+          accessory_id: string
+          actor: string | null
+          created_at: string
+          delta: number | null
+          id: string
+          new_quantity: number
+          previous_quantity: number
+          reason: string
+          sale_id: string | null
+          store_id: string
+        }
+        Insert: {
+          accessory_id: string
+          actor?: string | null
+          created_at?: string
+          delta?: number | null
+          id?: string
+          new_quantity: number
+          previous_quantity: number
+          reason: string
+          sale_id?: string | null
+          store_id: string
+        }
+        Update: {
+          accessory_id?: string
+          actor?: string | null
+          created_at?: string
+          delta?: number | null
+          id?: string
+          new_quantity?: number
+          previous_quantity?: number
+          reason?: string
+          sale_id?: string | null
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accessory_movements_accessory_id_fkey"
+            columns: ["accessory_id"]
+            isOneToOne: false
+            referencedRelation: "accessories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accessory_movements_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accessory_movements_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
@@ -1621,6 +1691,39 @@ export type Database = {
           },
         ]
       }
+      sale_product_costs: {
+        Row: {
+          sale_product_item_id: string
+          store_id: string
+          unit_cost: number | null
+        }
+        Insert: {
+          sale_product_item_id: string
+          store_id: string
+          unit_cost?: number | null
+        }
+        Update: {
+          sale_product_item_id?: string
+          store_id?: string
+          unit_cost?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_product_costs_sale_product_item_id_fkey"
+            columns: ["sale_product_item_id"]
+            isOneToOne: true
+            referencedRelation: "sale_product_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_product_costs_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_product_items: {
         Row: {
           accessory_id: string
@@ -2260,6 +2363,15 @@ export type Database = {
       is_store_member: { Args: { _store_id: string }; Returns: boolean }
       is_store_member_any: { Args: { _store_id: string }; Returns: boolean }
       is_store_owner: { Args: { _store_id: string }; Returns: boolean }
+      manage_accessory: {
+        Args: {
+          _action: string
+          _id: string
+          _store_id: string
+          _values?: Json
+        }
+        Returns: string
+      }
       manage_evaluation_record: {
         Args: {
           _action: string

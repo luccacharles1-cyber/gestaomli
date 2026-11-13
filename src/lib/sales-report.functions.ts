@@ -34,10 +34,10 @@ export const getSalesReport = createServerFn({ method: "POST" })
       const costs = canCosts && sold.length ? await readAll(offset=>db.from("device_costs").select("device_id,total_cost").eq("store_id",storeId).in("device_id",sold.map(i=>i.device_id)).order("device_id").range(offset,offset+499)) : [];
       const costMap=new Map(costs.map(c=>[c.device_id,c.total_cost]));
       items.push(...sold.map(i=>({sale_id:i.sale_id,device_id:i.device_id,model:i.devices?.model ?? "Aparelho não identificado",storage:i.devices?.storage ?? null,cost:canCosts ? costMap.get(i.device_id) ?? null : null})));
-      const products = await readAll(offset=>db.from("sale_product_items").select("sale_id,accessory_id,name,quantity,unit_price,subtotal").eq("store_id",storeId).in("sale_id",batch).order("id").range(offset,offset+499));
-      const productCosts = canCosts && products.length ? await readAll(offset=>db.from("accessory_costs").select("accessory_id,unit_cost").eq("store_id",storeId).in("accessory_id",products.map(p=>p.accessory_id)).order("accessory_id").range(offset,offset+499)) : [];
-      const productCostMap = new Map(productCosts.map(p=>[p.accessory_id,p.unit_cost]));
-      items.push(...products.map(p=>({sale_id:p.sale_id,device_id:p.accessory_id,model:p.name,storage:null,quantity:p.quantity,unitPrice:p.unit_price,subtotal:p.subtotal ?? p.quantity * p.unit_price,cost:canCosts ? productCostMap.get(p.accessory_id) ?? null : null})));
+      const products = await readAll(offset=>db.from("sale_product_items").select("id,sale_id,accessory_id,name,quantity,unit_price,subtotal").eq("store_id",storeId).in("sale_id",batch).order("id").range(offset,offset+499));
+      const productCosts = canCosts && products.length ? await readAll(offset=>db.from("sale_product_costs").select("sale_product_item_id,unit_cost").eq("store_id",storeId).in("sale_product_item_id",products.map(p=>p.id)).order("sale_product_item_id").range(offset,offset+499)) : [];
+      const productCostMap = new Map(productCosts.map(p=>[p.sale_product_item_id,p.unit_cost]));
+      items.push(...products.map(p=>({sale_id:p.sale_id,device_id:p.accessory_id,model:p.name,storage:null,quantity:p.quantity,unitPrice:p.unit_price,subtotal:p.subtotal ?? p.quantity * p.unit_price,cost:canCosts ? productCostMap.get(p.id) ?? null : null})));
       if(canFinance) {
         entries.push(...await readAll(offset=>db.from("financial_entries").select("sale_id, contract_id, method, kind, status, paid_amount, is_refund, reversal_of").eq("store_id",storeId).in("sale_id",batch).order("id").range(offset,offset+499)));
         payments.push(...await readAll(offset=>db.from("sale_payments").select("sale_id,method,amount").eq("store_id",storeId).in("sale_id",batch).order("id").range(offset,offset+499)));

@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AccessoriesPanel } from "@/components/app/AccessoriesPanel";
 
 export const Route = createFileRoute("/_authenticated/app/estoque/")({
-  head: () => ({ meta: [{ title: "Estoque — MLI Gestão" }, { name: "description", content: "Aparelhos e acessórios da loja." }, { property: "og:title", content: "Estoque — MLI Gestão" }, { property: "og:description", content: "Aparelhos e acessórios da loja." }] }),
+  head: () => ({ meta: [{ title: "Estoque — MLI Gestão" }, { name: "description", content: "Aparelhos e acessórios da loja." }, { property: "og:title", content: "Estoque — MLI Gestão" }, { property: "og:description", content: "Aparelhos e acessórios da loja." },{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}] }),
   component: Estoque,
 });
 

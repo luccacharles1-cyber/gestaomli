@@ -75,7 +75,7 @@ function NovaVenda() {
         supabase.from("clients").select("id, name, whatsapp").eq("store_id", store.id).order("name"),
         supabase.from("devices").select("*").eq("store_id", store.id).in("status", ["disponivel", "reservado"]).order("model"),
         supabase.from("evaluations").select("id, model, storage, offered_value, client_id").eq("store_id", store.id).is("sale_id", null).eq("archived", false).neq("status", "utilizada").order("created_at", { ascending: false }),
-        supabase.from("accessories").select("*").eq("store_id", store.id).gt("quantity", 0).order("name"),
+        supabase.from("accessories").select("*").eq("store_id", store.id).eq("archived",false).gt("quantity", 0).order("name"),
       ]);
       if (a.error) throw a.error;
       if (ev.error) throw ev.error;
@@ -106,7 +106,7 @@ function NovaVenda() {
   const availableProducts = useMemo(() => {
     const term = itemSearch.trim().toLowerCase();
     return (data?.products ?? []).filter(p => !products.some(i => i.product.id === p.id))
-      .filter(p => !term || [p.name, p.sku].filter(Boolean).join(" ").toLowerCase().includes(term)).slice(0, 8);
+      .filter(p => !term || [p.name, p.sku, p.category, p.description].filter(Boolean).join(" ").toLowerCase().includes(term)).slice(0, 8);
   }, [data, itemSearch, products]);
   const productError = products.map(p => validateProductQuantity(Number(p.quantity), p.product.quantity)).find(Boolean);
   const paymentCents = payments.map((p) => parseBRLToCents(p.amount) ?? 0);

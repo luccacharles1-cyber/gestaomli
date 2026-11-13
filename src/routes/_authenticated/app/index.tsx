@@ -52,7 +52,7 @@ function Dashboard() {
         perms.viewFinance ? supabase.from("financial_accounts").select("*").eq("store_id", store.id) : Promise.resolve({ data: [] }),
         perms.viewFinance ? supabase.from("financial_entries").select("kind, status, amount, paid_amount, account_id, due_date, competence_date, paid_at, is_transfer, is_equity, contract_id").eq("store_id", store.id) : Promise.resolve({ data: [] }),
         perms.viewFinance ? supabase.from("credit_installments").select("amount, paid_amount, due_date, status, credit_contracts!inner(store_id, status)").eq("store_id", store.id).eq("credit_contracts.status", "ativo") : Promise.resolve({ data: [] }),
-        perms.viewCosts ? supabase.from("sale_product_items").select("accessory_id, quantity, sales!inner(status,created_at)").eq("store_id",store.id).eq("sales.status","concluida").gte("sales.created_at",range.gte).lte("sales.created_at",range.lte) : Promise.resolve({data:[]}),
+        perms.viewCosts ? supabase.from("sale_product_items").select("quantity, sale_product_costs(unit_cost), sales!inner(status,created_at)").eq("store_id",store.id).eq("sales.status","concluida").gte("sales.created_at",range.gte).lte("sales.created_at",range.lte) : Promise.resolve({data:[]}),
       ]);
       const costMap = new Map((costs.data ?? []).map((c) => [c.device_id, c.total_cost]));
       const accMap = new Map((accCosts.data ?? []).map((c) => [c.accessory_id, c.unit_cost]));
@@ -76,7 +76,7 @@ function Dashboard() {
         grossProfit: perms.viewCosts
           ? (sales.data ?? []).reduce((acc, s) => acc + toCents(s.total), 0) -
             (soldItems.data ?? []).reduce((acc, i) => acc + toCents(costMap.get(i.device_id) ?? null), 0) -
-            (soldProducts.data ?? []).reduce((acc, i) => acc + toCents(accMap.get(i.accessory_id) ?? null) * i.quantity, 0)
+            (soldProducts.data ?? []).reduce((acc, i) => acc + toCents(i.sale_product_costs?.unit_cost ?? null) * i.quantity, 0)
           : null,
         finAccounts: (finAccounts.data ?? []) as FinancialAccount[],
         finEntries: (finEntries.data ?? []) as FinancialEntry[],

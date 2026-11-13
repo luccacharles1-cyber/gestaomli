@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Minus, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/lib/store-context";
-import { centsToDecimal, formatBRL, parseBRLToCents } from "@/lib/money";
+import { formatBRL, parseBRLToCents } from "@/lib/money";
+import { ProductActions } from "./ProductActions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -16,13 +16,22 @@ export function AccessoriesPanel() {
   const [price, setPrice] = useState("");
   const [cost, setCost] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["accessories", store.id],
+    queryKey: ["accessories", store.id, perms.viewCosts],
     queryFn: async () => {
       const { data, error } = await supabase.from("accessories").select("*").eq("store_id", store.id).order("name");
       if (error) throw error;
-      return data;
+      const [costs, movements, sales] = await Promise.all([
+        perms.viewCosts ? supabase.from("accessory_costs").select("accessory_id,unit_cost").eq("store_id",store.id) : Promise.resolve({data:[],error:null}),
+        supabase.from("accessory_movements").select("accessory_id").eq("store_id",store.id),
+        supabase.from("sale_product_items").select("accessory_id").eq("store_id",store.id),
+      ]);
+      if(costs.error) throw costs.error;
+      if(movements.error) throw movements.error;
+      if(sales.error) throw sales.error;
+      return (data ?? []).map(p=>({...p,unitCost:costs.data?.find(c=>c.accessory_id===p.id)?.unit_cost ?? null,hasHistory:[...(movements.data ?? []),...(sales.data ?? [])].some(m=>m.accessory_id===p.id)}));
     },
   });
 
@@ -33,6 +42,7 @@ export function AccessoriesPanel() {
     if (!Number.isInteger(q) || q < 0) { toast.error("Quantidade inválida."); return; }
     const p = price ? parseBRLToCents(price) : null;
     if (price && p == null) { toast.error("Preço inválido."); return; }
+    if(cost && parseBRLToCents(cost)==null) {toast.error("Custo inválido."); return;}
     setBusy(true);
     const { data: acc, error } = await supabase
       .from("accessories")
@@ -48,13 +58,6 @@ export function AccessoriesPanel() {
     qc.invalidateQueries({ queryKey: ["accessories", store.id] });
   }
 
-  async function adjust(id: string, quantity: number) {
-    if (quantity < 0) return;
-    const { error } = await supabase.from("accessories").update({ quantity }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    qc.invalidateQueries({ queryKey: ["accessories", store.id] });
-  }
-
   return (
     <div className="space-y-4">
       {perms.manageInventory && (
@@ -66,20 +69,21 @@ export function AccessoriesPanel() {
           <Button disabled={busy}>Adicionar</Button>
         </form>
       )}
-      {isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> : !data?.length ? (
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showArchived} onChange={e=>setShowArchived(e.target.checked)} />Mostrar arquivados</label>
+      {isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> : !data?.filter(a=>showArchived || !a.archived).length ? (
         <p className="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">Nenhum acessório cadastrado.</p>
       ) : (
         <div className="divide-y rounded-xl border bg-card">
-          {data.map((a) => (
+          {data.filter(a=>showArchived || !a.archived).map((a) => (
             <div key={a.id} className="flex items-center justify-between gap-3 p-4">
-              <div>
-                <p className="font-medium">{a.name}</p>
+              <div className="min-w-0">
+                <p className="break-words font-medium">{a.name}{a.archived ? " · Arquivado" : ""}</p>
+                {a.category && <p className="text-xs text-muted-foreground">{a.category}</p>}
                 <p className="text-xs text-muted-foreground">{a.sale_price != null ? formatBRL(a.sale_price) : "Sem preço"}</p>
               </div>
               <div className="flex items-center gap-2">
-                {perms.manageInventory && <Button size="icon" variant="outline" onClick={() => adjust(a.id, a.quantity - 1)} aria-label="Diminuir"><Minus className="h-4 w-4" /></Button>}
                 <span className="w-10 text-center font-semibold">{a.quantity}</span>
-                {perms.manageInventory && <Button size="icon" variant="outline" onClick={() => adjust(a.id, a.quantity + 1)} aria-label="Aumentar"><Plus className="h-4 w-4" /></Button>}
+                <ProductActions product={a} unitCost={a.unitCost} hasHistory={a.hasHistory} />
               </div>
             </div>
           ))}
