@@ -18,6 +18,7 @@ export type Perms = {
   approveCredit: boolean;
   renegotiate: boolean;
   viewContracts: boolean;
+  attendChats: boolean;
 };
 
 export type StoreCtx = {
@@ -47,6 +48,7 @@ export function permsFor(m: Member): Perms {
     approveCredit: o || m.can_approve_credit,
     renegotiate: o || m.can_renegotiate,
     viewContracts: o || m.can_view_contracts,
+    attendChats: o || m.can_attend_chats,
   };
 }
 

@@ -418,6 +418,76 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          assigned_to: string | null
+          channel: string
+          client_id: string | null
+          contact_name: string | null
+          created_at: string
+          id: string
+          last_inbound_at: string | null
+          last_message_at: string | null
+          last_message_preview: string | null
+          opportunity_id: string | null
+          phone: string
+          store_id: string
+          unread_count: number
+        }
+        Insert: {
+          assigned_to?: string | null
+          channel?: string
+          client_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          last_inbound_at?: string | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          opportunity_id?: string | null
+          phone: string
+          store_id: string
+          unread_count?: number
+        }
+        Update: {
+          assigned_to?: string | null
+          channel?: string
+          client_id?: string | null
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          last_inbound_at?: string | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          opportunity_id?: string | null
+          phone?: string
+          store_id?: string
+          unread_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_contracts: {
         Row: {
           approved_by: string | null
@@ -1326,6 +1396,96 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          body: string | null
+          client_token: string | null
+          conversation_id: string
+          created_at: string
+          delivered_at: string | null
+          direction: string
+          error: string | null
+          failed_at: string | null
+          id: string
+          media_error: string | null
+          media_id: string | null
+          media_mime: string | null
+          media_path: string | null
+          provider_at: string | null
+          read_at: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          store_id: string
+          template_name: string | null
+          type: string
+          wa_message_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          client_token?: string | null
+          conversation_id: string
+          created_at?: string
+          delivered_at?: string | null
+          direction: string
+          error?: string | null
+          failed_at?: string | null
+          id?: string
+          media_error?: string | null
+          media_id?: string | null
+          media_mime?: string | null
+          media_path?: string | null
+          provider_at?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          store_id: string
+          template_name?: string | null
+          type?: string
+          wa_message_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          client_token?: string | null
+          conversation_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          direction?: string
+          error?: string | null
+          failed_at?: string | null
+          id?: string
+          media_error?: string | null
+          media_id?: string | null
+          media_mime?: string | null
+          media_path?: string | null
+          provider_at?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          store_id?: string
+          template_name?: string | null
+          type?: string
+          wa_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1952,6 +2112,7 @@ export type Database = {
           accepted_at: string | null
           can_approve_credit: boolean
           can_approve_evaluations: boolean
+          can_attend_chats: boolean
           can_cancel_sales: boolean
           can_give_discounts: boolean
           can_manage_inventory: boolean
@@ -1979,6 +2140,7 @@ export type Database = {
           accepted_at?: string | null
           can_approve_credit?: boolean
           can_approve_evaluations?: boolean
+          can_attend_chats?: boolean
           can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
@@ -2006,6 +2168,7 @@ export type Database = {
           accepted_at?: string | null
           can_approve_credit?: boolean
           can_approve_evaluations?: boolean
+          can_attend_chats?: boolean
           can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
@@ -2043,6 +2206,7 @@ export type Database = {
         Row: {
           can_approve_credit: boolean
           can_approve_evaluations: boolean
+          can_attend_chats: boolean
           can_cancel_sales: boolean
           can_give_discounts: boolean
           can_manage_inventory: boolean
@@ -2064,6 +2228,7 @@ export type Database = {
         Insert: {
           can_approve_credit?: boolean
           can_approve_evaluations?: boolean
+          can_attend_chats?: boolean
           can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
@@ -2085,6 +2250,7 @@ export type Database = {
         Update: {
           can_approve_credit?: boolean
           can_approve_evaluations?: boolean
+          can_attend_chats?: boolean
           can_cancel_sales?: boolean
           can_give_discounts?: boolean
           can_manage_inventory?: boolean
@@ -2254,6 +2420,119 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_connections: {
+        Row: {
+          checked_at: string | null
+          created_at: string
+          details: Json
+          display_phone: string | null
+          id: string
+          last_error: string | null
+          mode: string
+          phone_number_id: string
+          status: string
+          store_id: string
+          verified_name: string | null
+        }
+        Insert: {
+          checked_at?: string | null
+          created_at?: string
+          details?: Json
+          display_phone?: string | null
+          id?: string
+          last_error?: string | null
+          mode?: string
+          phone_number_id: string
+          status?: string
+          store_id: string
+          verified_name?: string | null
+        }
+        Update: {
+          checked_at?: string | null
+          created_at?: string
+          details?: Json
+          display_phone?: string | null
+          id?: string
+          last_error?: string | null
+          mode?: string
+          phone_number_id?: string
+          status?: string
+          store_id?: string
+          verified_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_status_events: {
+        Row: {
+          created_at: string
+          delivery_id: string
+          errors: Json | null
+          id: string
+          provider_at: string | null
+          status: string
+          wa_message_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_id: string
+          errors?: Json | null
+          id?: string
+          provider_at?: string | null
+          status: string
+          wa_message_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_id?: string
+          errors?: Json | null
+          id?: string
+          provider_at?: string | null
+          status?: string
+          wa_message_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_webhook_events: {
+        Row: {
+          attempts: number
+          delivery_id: string
+          event: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          processing_error: string | null
+          received_at: string
+        }
+        Insert: {
+          attempts?: number
+          delivery_id: string
+          event: string
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
+        }
+        Update: {
+          attempts?: number
+          delivery_id?: string
+          event?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: string | null
+          received_at?: string
         }
         Relationships: []
       }
@@ -2444,6 +2723,8 @@ export type Database = {
         Returns: undefined
       }
       store_access_ok: { Args: { _store_id: string }; Returns: boolean }
+      wa_apply_statuses: { Args: { _wa_id: string }; Returns: undefined }
+      wa_process_event: { Args: { _delivery_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin"

@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { WhatsappIntegration } from "@/components/app/WhatsappIntegration";
 import { buildInviteLink, isRestrictedPreview } from "@/lib/invite-link";
 
 export const Route = createFileRoute("/_authenticated/app/configuracoes")({
@@ -36,6 +37,7 @@ const PERMS = [
   ["can_approve_credit", "Aprovar crediário"],
   ["can_renegotiate", "Renegociar contratos"],
   ["can_view_contracts", "Consultar contratos e documentos"],
+  ["can_attend_chats", "Atender conversas do WhatsApp"],
 ] as const;
 type PermKey = (typeof PERMS)[number][0];
 
@@ -45,9 +47,10 @@ function Settings() {
     <div className="mx-auto max-w-4xl">
       <PageHeader title="Configurações" />
       <Tabs defaultValue="loja">
-        <TabsList><TabsTrigger value="loja">Loja</TabsTrigger><TabsTrigger value="equipe">Equipe</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="loja">Loja</TabsTrigger><TabsTrigger value="equipe">Equipe</TabsTrigger><TabsTrigger value="integracoes">Integrações</TabsTrigger></TabsList>
         <TabsContent value="loja" className="mt-4">{member.role === "owner" ? <StoreForm /> : <p className="text-sm text-muted-foreground">Somente o proprietário altera os dados da loja.</p>}</TabsContent>
         <TabsContent value="equipe" className="mt-4"><Team /></TabsContent>
+        <TabsContent value="integracoes" className="mt-4"><WhatsappIntegration /></TabsContent>
       </Tabs>
     </div>
   );
@@ -135,7 +138,7 @@ function Team() {
   const [newPerms, setNewPerms] = useState<Record<PermKey, boolean>>({
     can_view_costs: false, can_view_finance: false, can_give_discounts: false, can_approve_evaluations: false, can_manage_inventory: false, can_manage_team: false,
     can_register_sales: true, can_cancel_sales: false,
-    can_register_payments: false, can_reverse_payments: false, can_approve_credit: false, can_renegotiate: false, can_view_contracts: false,
+    can_register_payments: false, can_reverse_payments: false, can_approve_credit: false, can_renegotiate: false, can_view_contracts: false, can_attend_chats: false,
   });
 
   const [lastLink, setLastLink] = useState<string | null>(null);

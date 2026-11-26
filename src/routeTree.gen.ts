@@ -18,6 +18,7 @@ import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticat
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app/admin'
+import { Route as AuthenticatedAppAtendimentoRouteImport } from './routes/_authenticated/app/atendimento'
 import { Route as AuthenticatedAppAvaliacaoRouteImport } from './routes/_authenticated/app/avaliacao'
 import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenticated/app/clientes'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
@@ -31,6 +32,7 @@ import { Route as AuthenticatedAppEstoqueIdRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppEstoqueNovoRouteImport } from './routes/_authenticated/app/estoque/novo'
 import { Route as AuthenticatedAppVendasIdRouteImport } from './routes/_authenticated/app/vendas_.$id'
 import { Route as AuthenticatedAppVendasNovaRouteImport } from './routes/_authenticated/app/vendas_.nova'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp/webhook'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +78,12 @@ const AuthenticatedAppAdminRoute = AuthenticatedAppAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
+const AuthenticatedAppAtendimentoRoute =
+  AuthenticatedAppAtendimentoRouteImport.update({
+    id: '/atendimento',
+    path: '/atendimento',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
 const AuthenticatedAppAvaliacaoRoute =
   AuthenticatedAppAvaliacaoRouteImport.update({
     id: '/avaliacao',
@@ -153,6 +161,12 @@ const AuthenticatedAppVendasNovaRoute =
     path: '/vendas/nova',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp/webhook',
+    path: '/api/public/whatsapp/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -162,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/app/admin': typeof AuthenticatedAppAdminRoute
+  '/app/atendimento': typeof AuthenticatedAppAtendimentoRoute
   '/app/avaliacao': typeof AuthenticatedAppAvaliacaoRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -175,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
   '/app/vendas/$id': typeof AuthenticatedAppVendasIdRoute
   '/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
 }
 export interface FileRoutesByTo {
@@ -184,6 +200,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/app/admin': typeof AuthenticatedAppAdminRoute
+  '/app/atendimento': typeof AuthenticatedAppAtendimentoRoute
   '/app/avaliacao': typeof AuthenticatedAppAvaliacaoRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -197,6 +214,7 @@ export interface FileRoutesByTo {
   '/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
   '/app/vendas/$id': typeof AuthenticatedAppVendasIdRoute
   '/app/vendas/nova': typeof AuthenticatedAppVendasNovaRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/app/estoque': typeof AuthenticatedAppEstoqueIndexRoute
 }
 export interface FileRoutesById {
@@ -209,6 +227,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/convite/$token': typeof ConviteTokenRoute
   '/_authenticated/app/admin': typeof AuthenticatedAppAdminRoute
+  '/_authenticated/app/atendimento': typeof AuthenticatedAppAtendimentoRoute
   '/_authenticated/app/avaliacao': typeof AuthenticatedAppAvaliacaoRoute
   '/_authenticated/app/clientes': typeof AuthenticatedAppClientesRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -222,6 +241,7 @@ export interface FileRoutesById {
   '/_authenticated/app/estoque/novo': typeof AuthenticatedAppEstoqueNovoRoute
   '/_authenticated/app/vendas_/$id': typeof AuthenticatedAppVendasIdRoute
   '/_authenticated/app/vendas_/nova': typeof AuthenticatedAppVendasNovaRoute
+  '/api/public/whatsapp/webhook': typeof ApiPublicWhatsappWebhookRoute
   '/_authenticated/app/estoque/': typeof AuthenticatedAppEstoqueIndexRoute
 }
 export interface FileRouteTypes {
@@ -234,6 +254,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/convite/$token'
     | '/app/admin'
+    | '/app/atendimento'
     | '/app/avaliacao'
     | '/app/clientes'
     | '/app/configuracoes'
@@ -247,6 +268,7 @@ export interface FileRouteTypes {
     | '/app/estoque/novo'
     | '/app/vendas/$id'
     | '/app/vendas/nova'
+    | '/api/public/whatsapp/webhook'
     | '/app/estoque/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -256,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/convite/$token'
     | '/app/admin'
+    | '/app/atendimento'
     | '/app/avaliacao'
     | '/app/clientes'
     | '/app/configuracoes'
@@ -269,6 +292,7 @@ export interface FileRouteTypes {
     | '/app/estoque/novo'
     | '/app/vendas/$id'
     | '/app/vendas/nova'
+    | '/api/public/whatsapp/webhook'
     | '/app/estoque'
   id:
     | '__root__'
@@ -280,6 +304,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/convite/$token'
     | '/_authenticated/app/admin'
+    | '/_authenticated/app/atendimento'
     | '/_authenticated/app/avaliacao'
     | '/_authenticated/app/clientes'
     | '/_authenticated/app/configuracoes'
@@ -293,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/estoque/novo'
     | '/_authenticated/app/vendas_/$id'
     | '/_authenticated/app/vendas_/nova'
+    | '/api/public/whatsapp/webhook'
     | '/_authenticated/app/estoque/'
   fileRoutesById: FileRoutesById
 }
@@ -302,6 +328,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ConviteTokenRoute: typeof ConviteTokenRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -367,6 +394,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/app/admin'
       preLoaderRoute: typeof AuthenticatedAppAdminRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/atendimento': {
+      id: '/_authenticated/app/atendimento'
+      path: '/atendimento'
+      fullPath: '/app/atendimento'
+      preLoaderRoute: typeof AuthenticatedAppAtendimentoRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
     '/_authenticated/app/avaliacao': {
@@ -460,11 +494,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppVendasNovaRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/api/public/whatsapp/webhook': {
+      id: '/api/public/whatsapp/webhook'
+      path: '/api/public/whatsapp/webhook'
+      fullPath: '/api/public/whatsapp/webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
+  AuthenticatedAppAtendimentoRoute: typeof AuthenticatedAppAtendimentoRoute
   AuthenticatedAppAvaliacaoRoute: typeof AuthenticatedAppAvaliacaoRoute
   AuthenticatedAppClientesRoute: typeof AuthenticatedAppClientesRoute
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
@@ -483,6 +525,7 @@ interface AuthenticatedAppRouteRouteChildren {
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppAdminRoute: AuthenticatedAppAdminRoute,
+  AuthenticatedAppAtendimentoRoute: AuthenticatedAppAtendimentoRoute,
   AuthenticatedAppAvaliacaoRoute: AuthenticatedAppAvaliacaoRoute,
   AuthenticatedAppClientesRoute: AuthenticatedAppClientesRoute,
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
@@ -523,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ConviteTokenRoute: ConviteTokenRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

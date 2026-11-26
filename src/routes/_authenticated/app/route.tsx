@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
   Home, Boxes, ShoppingCart, Users, ClipboardCheck, Wallet, BarChart3, FileText, Truck, Settings, LogOut, Menu, Loader2,
+  MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoreContext, permsFor, ROLE_LABEL, type StoreCtx } from "@/lib/store-context";
@@ -39,6 +40,7 @@ const NAV = [
   { to: "/app/estoque", label: "Estoque", icon: Boxes },
   { to: "/app/vendas", label: "Vendas", icon: ShoppingCart },
   { to: "/app/clientes", label: "Clientes e CRM", icon: Users },
+  { to: "/app/atendimento", label: "Atendimento", icon: MessageCircle },
   { to: "/app/avaliacao", label: "Avaliação de usados", icon: ClipboardCheck },
   { to: "/app/financeiro", label: "Financeiro", icon: Wallet },
   { to: "/app/relatorios", label: "Relatórios", icon: BarChart3 },
